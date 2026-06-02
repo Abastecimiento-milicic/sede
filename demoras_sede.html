@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CUMPLIMIENTO SEDE — Demoras Sede</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="base.css?v=20260602" />
+  <link rel="stylesheet" href="cumplimiento.css?v=20260602" />
+  <script defer src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script>
+  <script src="theme.js"></script>
+</head>
+
+<body class="page-cumplimiento">
+  <!-- LOADER -->
+  <div id="loader" class="loader-overlay">
+    <div class="spinner-bars">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+    <div class="loading-text">Cargando datos de Demoras Sede...</div>
+  </div>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="title">CUMPLIMIENTO</div>
+      <div class="subtitle">Análisis de Cumplimiento de Pedidos — DEMORAS SEDE</div>
+    </div>
+
+    <div class="topbar-right" style="display: flex; gap: 0.5rem; align-items: stretch;">
+      <button class="btn-refresh-top" onclick="window.location.reload()" title="Actualizar datos">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
+      <div class="update-box">
+        <div class="update-label">Última actualización</div>
+        <div id="lastUpdate" class="update-date">02/06/2026</div>
+        <div class="update-version">v. 20260602_dem_sede</div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <a class="tab active" href="index.html">SEDE</a>
+    <a class="tab" href="reap.html">REAP</a>
+    <a class="tab" href="pi.html">PEDIDOS DE INFORMACIÓN</a>
+    <a class="tab" href="servicios.html">SERVICIOS</a>
+  </nav>
+
+  <div class="sub-tabs-row">
+    <div class="sub-tab-col sub-tab-group">
+      <a class="sub-tab-btn active" href="demoras_sede.html">DEMORAS SEDE</a>
+    </div>
+    <div class="sub-tab-col sub-tab-group">
+      <a class="sub-tab-btn" href="demoras_reap.html">DEMORAS REAP</a>
+    </div>
+    <div class="sub-tab-col sub-tab-group">
+      <a class="sub-tab-btn" href="indicadores_pi.html">INDICADORES PI</a>
+    </div>
+    <div class="sub-tab-col">—</div>
+  </div>
+
+  <main class="container">
+    <div id="msg"></div>
+
+    <!-- FILTROS -->
+    <section class="panel">
+      <div class="panel-title">FILTROS</div>
+      <div class="panel-body filters filters-5" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem;">
+        <div class="filter">
+          <label>CLIENTE</label>
+          <select id="clienteSelect" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="filter">
+          <label>CARACTER DE GC</label>
+          <select id="caracterSelect" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="filter">
+          <label>GRUPO DE COMPRAS</label>
+          <select id="grupoCompraSelect" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="filter">
+          <label>COMPRADOR</label>
+          <select id="compradorSelect" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="filter">
+          <label>MES DE ENTREGA</label>
+          <select id="mesSelect" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPIs DE DEMORAS -->
+    <section class="panel">
+      <div class="panel-title">INDICADORES DE DEMORA (SEDE)</div>
+      <div class="panel-body kpi-grid kpi-grid-3">
+        <div class="kpi kpi-blue">
+          <div class="kpi-head">
+            <div class="kpi-title">CANTIDAD DE DEMORAS</div>
+            <div class="kpi-icon">⏳</div>
+          </div>
+          <div id="kpiTotalDemoras" class="kpi-value">-</div>
+          <div class="kpi-sub">Total de posiciones con demoras</div>
+        </div>
+
+        <div class="kpi kpi-amber">
+          <div class="kpi-head">
+            <div class="kpi-title">CARACTER DE GC TOP</div>
+            <div class="kpi-icon">🏆</div>
+          </div>
+          <div id="kpiTopGc" class="kpi-value">-</div>
+          <div class="kpi-sub">Carácter de GC con más demoras</div>
+        </div>
+
+        <div class="kpi kpi-green">
+          <div class="kpi-head">
+            <div class="kpi-title">PORCENTAJE QUE REPRESENTA</div>
+            <div class="kpi-icon">📊</div>
+          </div>
+          <div id="kpiTopGcPct" class="kpi-value">-</div>
+          <div class="kpi-sub">Representación sobre el total de demoras</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GRAFICOS DE DEMORA -->
+    <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-top: 1.5rem;">
+      <!-- GRAFICO TORTA -->
+      <section class="panel" style="margin-bottom: 0;">
+        <div class="panel-title">DISTRIBUCIÓN DE DEMORAS POR CARÁCTER DE GC</div>
+        <div class="panel-body">
+          <div class="chart-card">
+            <div class="chart-wrap" style="height: 540px;">
+              <div id="chartPie" class="chart-box" style="height: 100%;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GRAFICO TENDENCIA (BARRAS) -->
+      <section class="panel" style="margin-bottom: 0;">
+        <div class="panel-title">TENDENCIA HISTÓRICA POR MES Y CARÁCTER DE GC</div>
+        <div class="panel-body">
+          <div class="chart-card">
+            <div class="chart-wrap" style="height: 540px;">
+              <div id="chartTendencia" class="chart-box" style="height: 100%;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footnote">
+    ABASTECIMIENTO — Gestión de Demoras Sede. Desarrollado con tecnología premium.
+  </footer>
+
+  <script defer src="help.js?v=20260602"></script>
+  <script defer src="demoras_sede.js?v=20260602"></script>
+</body>
+
+</html>

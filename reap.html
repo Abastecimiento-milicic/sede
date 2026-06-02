@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CUMPLIMIENTO REAP — Cumplimiento REAP</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="base.css?v=20260519" />
+  <link rel="stylesheet" href="cumplimiento.css?v=20260519" />
+  <script defer src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script>
+  <script src="theme.js"></script>
+</head>
+
+<body class="page-cumplimiento">
+  <!-- LOADER -->
+  <div id="loader" class="loader-overlay">
+    <div class="spinner-bars">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+    <div class="loading-text">Cargando datos de cumplimiento REAP...</div>
+  </div>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="title">CUMPLIMIENTO</div>
+      <div class="subtitle">Análisis de Cumplimiento de Pedidos — REAP</div>
+    </div>
+
+    <div class="topbar-right" style="display: flex; gap: 0.5rem; align-items: stretch;">
+      <button class="btn-refresh-top" onclick="window.location.reload()" title="Actualizar datos">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
+      <div class="update-box">
+        <div class="update-label">Última actualización</div>
+        <div id="lastUpdate" class="update-date">19/05/2026</div>
+        <div class="update-version">v. 20260519_reap</div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <a class="tab" href="index.html">SEDE</a>
+    <a class="tab active" href="reap.html">REAP</a>
+    <a class="tab" href="pi.html">PEDIDOS DE INFORMACIÓN</a>
+    <a class="tab" href="servicios.html">SERVICIOS</a>
+  </nav>
+
+  <div class="sub-tabs-row">
+    <div class="sub-tab-col sub-tab-group">
+      <a class="sub-tab-btn" href="demoras_sede.html">DEMORAS SEDE</a>
+    </div>
+    <div class="sub-tab-col sub-tab-group">
+      <a class="sub-tab-btn" href="demoras_reap.html">DEMORAS REAP</a>
+    </div>
+    <div class="sub-tab-col sub-tab-group">
+      <a class="sub-tab-btn" href="indicadores_pi.html">INDICADORES PI</a>
+    </div>
+    <div class="sub-tab-col">—</div>
+  </div>
+
+  <main class="container">
+    <div id="msg"></div>
+
+    <!-- FILTROS -->
+    <section class="panel">
+      <div class="panel-title">FILTROS
+        <button class="help-btn" onclick="openHelp('filtros-cumplimiento')" title="Ayuda sobre los filtros">ℹ</button>
+      </div>
+      <div class="panel-body filters filters-cumplimiento">
+        <div class="filter">
+          <label>CLIENTE</label>
+          <select id="clienteSelect" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+          <div id="clienteHint" class="hint">Columna: -</div>
+        </div>
+
+        <div class="filter">
+          <label>CLASIFICACIÓN</label>
+          <select id="clasif2Select" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+          <div id="clasif2Hint" class="hint">Columna: -</div>
+        </div>
+
+        <div class="filter">
+          <label>GC OC</label>
+          <select id="gcocSelect" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+          <div id="gcocHint" class="hint">Columna: -</div>
+        </div>
+
+        <div class="filter">
+          <label>COMPRADOR</label>
+          <select id="compradorSelect" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+          <div id="compradorHint" class="hint">Columna: -</div>
+        </div>
+
+        <div class="filter">
+          <label>MES DE ENTREGA</label>
+          <select id="mesSelect" multiple size="6" class="multi-select"></select>
+          <div id="mesHint" class="hint">Mes seleccionado</div>
+        </div>
+
+        <div class="filter">
+          <label>&nbsp;</label>
+          <button id="btnDownloadNO" class="btn">
+            ⬇ Descargar NO entregados
+          </button>
+          <div class="hint">Exporta CSV con “;”</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPIs ACUMULADO -->
+    <section class="panel">
+      <div class="panel-title">CUMPLIMIENTO ACUMULADO (últimos 12 meses)
+        <button class="help-btn" onclick="openHelp('kpis-acumulado')" title="Ayuda sobre KPIs acumulados">ℹ</button>
+      </div>
+
+      <div class="panel-body kpi-grid kpi-grid-5">
+        <div class="kpi kpi-blue">
+          <div class="kpi-head">
+            <div class="kpi-title">COMPROMETIDOS</div>
+            <div class="kpi-icon">📦</div>
+          </div>
+          <div id="kpiTotal" class="kpi-value">-</div>
+          <div class="kpi-sub">AT + FT + No entregados</div>
+        </div>
+
+        <div class="kpi kpi-green">
+          <div class="kpi-head">
+            <div class="kpi-title">ENTREGADOS A TIEMPO</div>
+            <div class="kpi-icon">✅</div>
+          </div>
+          <div id="kpiATpct" class="kpi-value">-</div>
+          <div id="kpiATqty" class="kpi-sub kpi-sub-strong">Cantidad: -</div>
+        </div>
+
+        <div class="kpi kpi-amber">
+          <div class="kpi-head">
+            <div class="kpi-title">ENTREGADOS FUERA DE TIEMPO</div>
+            <div class="kpi-icon">⏳</div>
+          </div>
+          <div id="kpiFTpct" class="kpi-value">-</div>
+          <div id="kpiFTqty" class="kpi-sub kpi-sub-strong">Cantidad: -</div>
+        </div>
+
+        <div class="kpi kpi-red">
+          <div class="kpi-head">
+            <div class="kpi-title">NO ENTREGADOS</div>
+            <div class="kpi-icon">🚫</div>
+          </div>
+          <div id="kpiNOpct" class="kpi-value">-</div>
+          <div id="kpiNOqty" class="kpi-sub kpi-sub-strong">Cantidad: -</div>
+        </div>
+
+        <div class="kpi kpi-slate">
+          <div class="kpi-head">
+            <div class="kpi-title">DEMORA PROMEDIO</div>
+            <div class="kpi-icon">📅</div>
+          </div>
+          <div id="kpiDemoraAvg" class="kpi-value">-</div>
+          <div class="kpi-sub">Días promedio</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPIs MES -->
+    <section class="panel">
+      <div id="panelMesTitle" class="panel-title">CUMPLIMIENTO - MES SELECCIONADO
+        <button class="help-btn" onclick="openHelp('kpis-mes')" title="Ayuda sobre KPIs del mes">ℹ</button>
+      </div>
+
+      <div class="panel-body kpi-grid kpi-grid-5">
+        <div class="kpi kpi-blue">
+          <div class="kpi-head">
+            <div class="kpi-title">COMPROMETIDOS (MES)</div>
+            <div class="kpi-icon">📦</div>
+          </div>
+          <div id="kpiTotalMes" class="kpi-value">-</div>
+          <div class="kpi-sub">Total del mes</div>
+        </div>
+
+        <div class="kpi kpi-green">
+          <div class="kpi-head">
+            <div class="kpi-title">% AT (MES)</div>
+            <div class="kpi-icon">✅</div>
+          </div>
+          <div id="kpiATmes" class="kpi-value">-</div>
+          <div id="kpiATmesSub" class="kpi-sub kpi-sub-strong">Cant: -</div>
+        </div>
+
+        <div class="kpi kpi-amber">
+          <div class="kpi-head">
+            <div class="kpi-title">% FT (MES)</div>
+            <div class="kpi-icon">⏳</div>
+          </div>
+          <div id="kpiFTmes" class="kpi-value">-</div>
+          <div id="kpiFTmesSub" class="kpi-sub kpi-sub-strong">Cant: -</div>
+        </div>
+
+        <div class="kpi kpi-red">
+          <div class="kpi-head">
+            <div class="kpi-title">% NE (MES)</div>
+            <div class="kpi-icon">🚫</div>
+          </div>
+          <div id="kpiNOmes" class="kpi-value">-</div>
+          <div id="kpiNOmesSub" class="kpi-sub kpi-sub-strong">Cant: -</div>
+        </div>
+
+        <div class="kpi kpi-slate">
+          <div class="kpi-head">
+            <div class="kpi-title">DEMORA (MES)</div>
+            <div class="kpi-icon">📅</div>
+          </div>
+          <div id="kpiDemoraMes" class="kpi-value">-</div>
+          <div class="kpi-sub kpi-sub-strong">Promedio del mes</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GRÁFICOS -->
+    <section class="panel">
+      <div class="panel-title">CUMPLIMIENTO POR MES
+        <button class="help-btn" onclick="openHelp('grafico-mes')" title="Ayuda sobre el gráfico por mes">ℹ</button>
+      </div>
+      <div class="panel-body">
+        <div class="chart-card">
+          <div class="chart-wrap">
+            <div id="chartMes" class="chart-box"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">TENDENCIA DE CUMPLIMIENTO
+        <button class="help-btn" onclick="openHelp('grafico-tendencia')" title="Ayuda sobre la tendencia">ℹ</button>
+      </div>
+      <div class="panel-body">
+        <div class="chart-card">
+          <div class="chart-wrap">
+            <div id="chartTendencia" class="chart-box"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footnote">
+    ABASTECIMIENTO — Sede de Proyectos. Desarrollado con tecnología premium.
+  </footer>
+
+  <script defer src="help.js?v=20260519"></script>
+  <script defer src="reap.js?v=20260519"></script>
+</body>
+
+</html>
