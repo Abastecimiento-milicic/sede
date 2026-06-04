@@ -323,18 +323,20 @@ function getSingleMes(months) {
 
 function rowsByClienteBase() {
   const cs = getSelValues("clienteSelect");
-  let rows = cs.length ? data.filter(r => cs.includes(clean(r[CLIENT_COL]))) : data;
+  // Filtramos por cliente usando una comparación limpia
+  let rows = cs.length ? data.filter(r => cs.includes(clean(r[CLIENT_COL]))) : [...data];
 
   if (CLASIF2_COL) {
     const equiposNorm = "EQUIPOS MENORES".normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const almacenNorm = "ALMACEN".normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+    // Clonamos el objeto para no romper la referencia original de 'data'
     rows = rows.map(r => {
       const val = clean(r[CLASIF2_COL]).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       if (val === equiposNorm || val === almacenNorm) {
         return { ...r, [CLASIF2_COL]: "ALMACÉN" };
       }
-      return r;
+      return { ...r }; // Devolvemos una copia limpia
     });
   }
 
