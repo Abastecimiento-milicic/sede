@@ -1164,7 +1164,7 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadData() {
-    const CACHE_NAME = "abastecimiento-cache-v1";
+    const CACHE_NAME = "abastecimiento-cache-v2";
     const requestUrl = csvUrl;
     const cache = await caches.open(CACHE_NAME);
     
