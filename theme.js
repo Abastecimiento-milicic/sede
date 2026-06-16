@@ -3,7 +3,7 @@
   // ============================================================================
   // CONFIGURACIÓN DE ACTUALIZACIÓN (Cambiar manualmente aquí la fecha y versión)
   // ============================================================================
-  const FECHA_ACTUALIZACION = "02/06/2026";
+  const FECHA_ACTUALIZACION = "16/06/2026";
   const VERSION_ACTUALIZACION = "v. 20260602";
   // ============================================================================
 
