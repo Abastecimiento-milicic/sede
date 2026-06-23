@@ -1,8 +1,8 @@
 // Este archivo permite modificar la fecha y versión de actualización manualmente para todas las pestañas.
 // Modifique los valores aquí abajo y se verán reflejados en todo el sitio.
 
-const FECHA_ACTUALIZACION = "22/06/2026";
-const VERSION_ACTUALIZACION = "v. 20260602";
+const FECHA_ACTUALIZACION = "23/06/2026";
+const VERSION_ACTUALIZACION = "v. 20260623";
 
 // Compartir las variables globalmente
 window.FECHA_ACTUALIZACION = FECHA_ACTUALIZACION;
