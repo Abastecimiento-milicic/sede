@@ -1,0 +1,44 @@
+/* ===== Cumplimiento (index.html) ===== */
+
+@media (min-width: 1100px) {
+
+  /* Filtros (6 columnas): Cliente, Centro, Clasificación 2, GC OC, Mes, Botón */
+  .page-cumplimiento .filters.filters-4 {
+    grid-template-columns: 1.2fr 0.9fr 1.1fr 1.0fr 0.9fr 1.0fr;
+  }
+
+  /* Filtros (7 columnas): Cliente, Centro, Clasificación 2, GC OC, Comprador, Mes, Botón */
+  .page-cumplimiento .filters.filters-cumplimiento {
+    grid-template-columns: 1.1fr 0.9fr 1.1fr 0.9fr 0.9fr 0.8fr 1.1fr;
+  }
+
+  /* KPIs 4 columnas cuando uses .kpi-grid-4 */
+  .page-cumplimiento .kpi-grid.kpi-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.page-cumplimiento #msg {
+  margin-bottom: 10px;
+}
+
+
+/* KPI grid 5 columnas (para agregar demora promedio) */
+@media (min-width: 1100px) {
+  .page-cumplimiento .kpi-grid.kpi-grid-5 {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1099px) {
+  .page-cumplimiento .kpi-grid.kpi-grid-5 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* KPI neutra */
+.page-cumplimiento .kpi.kpi-slate {
+  border-left: 4px solid #64748b;
+}

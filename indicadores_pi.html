@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CUMPLIMIENTO PI — Indicadores PI</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="base.css?v=20260602" />
+  <link rel="stylesheet" href="cumplimiento.css?v=20260602" />
+  <script defer src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script>
+  <script src="cache-utils.js"></script>
+  <script src="last-update.js"></script>
+  <script src="theme.js"></script>
+</head>
+
+<body class="page-cumplimiento">
+  <!-- LOADER -->
+  <div id="loader" class="loader-overlay">
+    <div class="spinner-bars">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+    <div class="loading-text">Cargando datos de Indicadores PI...</div>
+  </div>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="title">CUMPLIMIENTO</div>
+      <div class="subtitle">Análisis de Cumplimiento de Pedidos — INDICADORES PI</div>
+    </div>
+
+    <div class="topbar-right" style="display: flex; gap: 0.5rem; align-items: stretch;">
+      <button class="btn-refresh-top" onclick="window.forceRefreshData()" title="Actualizar datos">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
+      <div class="update-box">
+        <div class="update-label">Última actualización</div>
+        <div id="lastUpdate" class="update-date">02/06/2026</div>
+        <div class="update-version">v. 20260602_ind_pi</div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <a class="tab" href="index.html">SEDE</a>
+    <a class="tab" href="reap.html">REAP</a>
+    <a class="tab active" href="pi.html">PEDIDOS DE INFORMACIÓN</a>
+    <a class="tab" href="servicios.html">SERVICIOS</a>
+  </nav>
+
+  <div class="sub-tabs-row">
+    <div class="sub-tab-col sub-tab-group">
+      <a class="sub-tab-btn" href="demoras_sede.html">DEMORAS SEDE</a>
+    </div>
+    <div class="sub-tab-col sub-tab-group">
+      <a class="sub-tab-btn" href="demoras_reap.html">DEMORAS REAP</a>
+    </div>
+    <div class="sub-tab-col sub-tab-group">
+      <a class="sub-tab-btn active" href="indicadores_pi.html">INDICADORES PI</a>
+    </div>
+    <div class="sub-tab-col">—</div>
+  </div>
+
+  <main class="container">
+    <div id="msg"></div>
+
+    <!-- FILTROS -->
+    <section class="panel">
+      <div class="panel-title">FILTROS</div>
+      <div class="panel-body filters filters-3" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+        <div class="filter">
+          <label>OBRA / CENTRO DE COSTO</label>
+          <select id="clienteSelect" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="filter">
+          <label>CENTRO</label>
+          <select id="centroSelect" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="filter">
+          <label>MES ENTREGA</label>
+          <select id="mesSelect" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="filter">
+          <label>FECHA ENTREGA (AÑO)</label>
+          <select id="anioSelect" multiple size="6" class="multi-select">
+            <option value="">Todos</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESUMEN DE DEMORAS Y DISTRIBUCION -->
+    <div style="display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+      <!-- TABLA DE DEMORAS -->
+      <section class="panel" style="margin-bottom: 0;">
+        <div class="panel-title">CANTIDAD DE DEMORAS</div>
+        <div class="panel-body" style="padding: 1rem;">
+          <table class="data-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 2px solid rgba(15,23,42,0.08);">
+                <th style="padding: 0.75rem 0.5rem; font-weight: 700;">INDICADOR</th>
+                <th style="padding: 0.75rem 0.5rem; font-weight: 700; text-align: right;">CASOS CON DEMORAS</th>
+                <th style="padding: 0.75rem 0.5rem; font-weight: 700; text-align: right;">PROMEDIO DE DEMORA</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid rgba(15,23,42,0.05);">
+                <td style="padding: 0.75rem 0.5rem; font-weight: 600; color: #2563eb;">LIBERACION SOLPED</td>
+                <td id="liberacionCount" style="padding: 0.75rem 0.5rem; text-align: right; font-weight: bold;">-</td>
+                <td id="liberacionMedian" style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 500;">-</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(15,23,42,0.05);">
+                <td style="padding: 0.75rem 0.5rem; font-weight: 600; color: #f97316;">PROCESAMIENTO</td>
+                <td id="procesamientoCount" style="padding: 0.75rem 0.5rem; text-align: right; font-weight: bold;">-</td>
+                <td id="procesamientoMedian" style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 500;">-</td>
+              </tr>
+              <tr style="border-bottom: 2px solid rgba(15,23,42,0.08);">
+                <td style="padding: 0.75rem 0.5rem; font-weight: 600; color: #16a34a;">RESPUESTA</td>
+                <td id="respuestaCount" style="padding: 0.75rem 0.5rem; text-align: right; font-weight: bold;">-</td>
+                <td id="respuestaMedian" style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 500;">-</td>
+              </tr>
+              <tr style="background: rgba(15,23,42,0.02); font-weight: bold;">
+                <td style="padding: 0.75rem 0.5rem;">TOTAL DEMORAS</td>
+                <td id="totalDemorasCount" style="padding: 0.75rem 0.5rem; text-align: right; color: #0f172a;">-</td>
+                <td style="padding: 0.75rem 0.5rem; text-align: right; color: #64748b; font-size: 0.85em; font-weight: normal;">(Suma de casos)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- GRAFICO TORTA Y PARAMETROS -->
+      <section class="panel" style="margin-bottom: 0;">
+        <div class="panel-title">PEDIDOS DE INFORMACIÓN (DISTRIBUCIÓN Y PARÁMETROS)</div>
+        <div class="panel-body" style="padding: 1rem; display: flex; gap: 1rem; align-items: stretch; justify-content: space-between;">
+          
+          <!-- COMENTARIOS PARÁMETROS (IZQUIERDA) -->
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; justify-content: center; width: 220px; flex-shrink: 0;">
+            <div style="background: #f1f5f9; color: #334155; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.7rem; border-left: 4px solid #0C6478; box-shadow: var(--shadow-sm);">
+              <strong style="display: block; font-size: 0.75rem; margin-bottom: 2px; color: #0C6478;">LIBERACIÓN SOLPED:</strong>
+              <div style="opacity: 0.9; margin-bottom: 3px; line-height: 1.2;">Fecha liberación solped - Fecha emisión solped</div>
+              <div style="font-weight: bold; color: #b45309; font-size: 0.7rem;">PARÁMETRO: 1 día</div>
+            </div>
+            
+            <div style="background: #f1f5f9; color: #334155; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.7rem; border-left: 4px solid #46DFB1; box-shadow: var(--shadow-sm);">
+              <strong style="display: block; font-size: 0.75rem; margin-bottom: 2px; color: #0C6478;">RESPUESTA:</strong>
+              <div style="opacity: 0.9; margin-bottom: 3px; line-height: 1.2;">Fecha bloqueo - Fecha liberación solped</div>
+              <div style="font-weight: bold; color: #b45309; font-size: 0.7rem;">PARÁMETRO: 0 días</div>
+            </div>
+            
+            <div style="background: #f1f5f9; color: #334155; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.7rem; border-left: 4px solid #15919B; box-shadow: var(--shadow-sm);">
+              <strong style="display: block; font-size: 0.75rem; margin-bottom: 2px; color: #15919B;">PROCESAMIENTO:</strong>
+              <div style="opacity: 0.9; margin-bottom: 3px; line-height: 1.2;">Fecha emisión VA01 - Fecha bloqueo VA21</div>
+              <div style="font-weight: bold; color: #b45309; font-size: 0.7rem;">PARÁMETRO: 2 días</div>
+            </div>
+          </div>
+
+          <!-- CHART CENTER -->
+          <div class="chart-card" style="flex-grow: 1; border: none; box-shadow: none; background: transparent; padding: 0; display: flex; align-items: center; justify-content: center;">
+            <div class="chart-wrap" style="height: 250px; width: 100%;">
+              <div id="chartPie" class="chart-box" style="height: 100%; width: 100%;"></div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </div>
+
+    <!-- TENDENCIA MENSAL -->
+    <section class="panel">
+      <div class="panel-title">TENDENCIA HISTÓRICA DE DEMORAS (ACUMULADO POR MES)</div>
+      <div class="panel-body">
+        <div class="chart-card">
+          <div class="chart-wrap" style="height: 350px;">
+            <div id="chartTendencia" class="chart-box" style="height: 100%;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPLICACIÓN DEL DASHBOARD -->
+    <section class="panel" style="margin-top: 1.5rem; background: #fff; border: 1px solid var(--border-light); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+      <div class="panel-title" style="border-bottom: 1px solid rgba(15,23,42,0.06); padding: 0.75rem 1.25rem; font-weight: 700; color: var(--col-brand-dk); font-size: 0.9rem; text-transform: uppercase;">
+        ℹ️ Explicación del Dashboard (Pedidos de Información)
+      </div>
+      <div class="panel-body" style="padding: 1.25rem; font-size: 0.82rem; color: #475569; line-height: 1.6; display: flex; flex-direction: column; gap: 0.75rem;">
+        <p style="margin: 0; font-size: 0.88rem; font-weight: 600; color: #1e293b;">
+          Este reporte mide el cumplimiento de las VA tipo ZPIN (pedidos de información) tanto para el cliente Obras como para Sede.
+        </p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 0.5rem; border-top: 1px dashed rgba(15,23,42,0.08); padding-top: 0.75rem;">
+          <div>
+            <ul style="margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.5rem;">
+              <li>
+                Se considera <strong style="color: #059669; background: rgba(5,150,105,0.08); padding: 1px 6px; border-radius: 4px;">"Respondido"</strong> cuando o bien la Solped que se genera a partir de la VA está "Respondida", o bien la VA está en estado "Procesado" o "Cumplido".
+              </li>
+              <li>
+                Se considera <strong style="color: #dc2626; background: rgba(220,38,38,0.08); padding: 1px 6px; border-radius: 4px;">"No respondido"</strong> cuando la Solped se encuentra en estado "Incompleto" o la VA "Sin tratamiento".
+              </li>
+            </ul>
+          </div>
+          <div>
+            <ul style="margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.5rem;">
+              <li>
+                Se considera <strong style="color: #059669; background: rgba(5,150,105,0.08); padding: 1px 6px; border-radius: 4px;">"Respondido A Término"</strong> cuando la fecha de respuesta es menor o igual a la Fecha de entrega esperada.
+              </li>
+              <li>
+                Sino se considera <strong style="color: #d97706; background: rgba(217,119,6,0.08); padding: 1px 6px; border-radius: 4px;">"Respondido Fuera de Término"</strong>.
+              </li>
+              <li>
+                La demora promedio se calcula en función de las entregas fuera de término, es decir, de las entregas <strong style="color: #475569; background: rgba(71,85,105,0.08); padding: 1px 6px; border-radius: 4px;">"Demoradas"</strong>.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footnote">
+    ABASTECIMIENTO — Gestión de Pedidos de Información. 
+  </footer>
+
+  <script defer src="help.js?v=20260602"></script>
+  <script defer src="indicadores_pi.js?v=20260602"></script>
+</body>
+
+</html>
