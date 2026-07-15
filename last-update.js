@@ -1,34 +1,32 @@
-// Este archivo permite modificar la fecha y versión de actualización manualmente para todas las pestañas.
-// Modifique los valores aquí abajo y se verán reflejados en todo el sitio.
-
+// ==========================================
+// ÚNICO LUGAR DONDE CAMBIARÁS LA VERSIÓN
+// ==========================================
 const FECHA_ACTUALIZACION = "14/07/2026";
-const VERSION_ACTUALIZACION = "v. 20260714";  //CAMBIAR AMBAS FECHAS
+const VERSION_ACTUALIZACION = "v. 20260714"; // CAMBIAR AMBAS FECHAS!!
 
-// Sincronizar el cache buster con la versión declarada arriba
+// Creamos un buster basado estrictamente en el texto de la versión
+// Al remover puntos, espacios y la "v", "v. 20260715" se convierte en "20260715"
+const cleanVersion = VERSION_ACTUALIZACION.replace(/[^\d]/g, "");
+
+// Sincronizar el localStorage para limpiar IndexedDB de inmediato
 let storedVersion = localStorage.getItem("APP_VERSION_TRACKER");
-let cacheBuster = localStorage.getItem("APP_CACHE_BUSTER");
-
-// Si la versión declarada cambió o no existe un buster previo, generamos uno nuevo y limpiamos la caché
-if (storedVersion !== VERSION_ACTUALIZACION || !cacheBuster) {
-    cacheBuster = Date.now().toString(36);
-    localStorage.setItem("APP_CACHE_BUSTER", cacheBuster);
+if (storedVersion !== VERSION_ACTUALIZACION) {
+    localStorage.setItem("APP_CACHE_BUSTER", cleanVersion);
     localStorage.setItem("APP_VERSION_TRACKER", VERSION_ACTUALIZACION);
     
-    // Limpiamos la caché de IndexedDB inmediatamente para asegurar datos frescos
+    // Si IndexedDB tiene datos viejos, los borramos
     if (window.clearDataCache) {
-        window.clearDataCache().catch(err => console.warn("Error limpiando IndexedDB: ", err));
+        window.clearDataCache().catch(err => console.warn("Error limpiando IndexedDB:", err));
     }
 }
 
 // Compartir las variables globalmente
 window.FECHA_ACTUALIZACION = FECHA_ACTUALIZACION;
 window.VERSION_ACTUALIZACION = VERSION_ACTUALIZACION;
-window.CACHE_BUSTER = cacheBuster;
+window.CACHE_BUSTER = cleanVersion; // Compartimos el buster limpio para el fetch del CSV
 
 window.forceRefreshData = function() {
-    // Forzamos un nuevo buster en el almacenamiento local y recargamos de verdad
     localStorage.setItem("APP_CACHE_BUSTER", Date.now().toString(36));
-    
     if (window.clearDataCache) {
         window.clearDataCache().then(() => {
             window.location.reload(true);
