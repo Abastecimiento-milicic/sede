@@ -14,8 +14,25 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="base.css?v=20260602" />
-  <link rel="stylesheet" href="cumplimiento.css?v=20260602" />
+<script src="last-update.js"></script>
+  <script>
+    (function() {
+      const version = window.CACHE_BUSTER || Date.now().toString();
+      
+      const baseCss = document.createElement('link');
+      baseCss.rel = 'stylesheet';
+      baseCss.href = 'base.css?v=' + version;
+      document.head.appendChild(baseCss);
+
+      const cumplimientoCss = document.createElement('link');
+      cumplimientoCss.rel = 'stylesheet';
+      cumplimientoCss.href = 'cumplimiento.css?v=' + version;
+      document.head.appendChild(cumplimientoCss);
+    })();
+  </script>
+
+
+  
   <script defer src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script>
   <script src="cache-utils.js"></script>
@@ -273,8 +290,21 @@
     ABASTECIMIENTO — Gestión de Pedidos de Información. Desarrollado con tecnología premium.
   </footer>
 
-  <script defer src="help.js?v=20260602"></script>
-  <script defer src="pi.js?v=20260602"></script>
+<script>
+    (function() {
+      const version = window.CACHE_BUSTER || Date.now().toString();
+      
+      const helpJs = document.createElement('script');
+      helpJs.defer = true;
+      helpJs.src = 'help.js?v=' + version;
+      document.body.appendChild(helpJs);
+
+      const piJs = document.createElement('script');
+      piJs.defer = true;
+      piJs.src = 'pi.js?v=' + version;
+      document.body.appendChild(piJs);
+    })();
+  </script>
 </body>
 
 </html>
