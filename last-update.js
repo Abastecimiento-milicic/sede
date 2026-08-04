@@ -2,7 +2,7 @@
 // Modifique los valores aquí abajo y se verán reflejados en todo el sitio.
 
 const FECHA_ACTUALIZACION = "03/08/2026";
-const VERSION_ACTUALIZACION = "v. 20260803";
+const VERSION_ACTUALIZACION = "v. 20260804";
 
 // Utilizar localStorage para mantener la sesión de caché sincronizada entre pestañas y navegaciones
 let cacheBuster = localStorage.getItem("APP_CACHE_BUSTER");
