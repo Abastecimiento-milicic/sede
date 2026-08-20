@@ -1,8 +1,8 @@
 // Este archivo permite modificar la fecha y versión de actualización manualmente para todas las pestañas.
 // Modifique los valores aquí abajo y se verán reflejados en todo el sitio.
 
-const FECHA_ACTUALIZACION = "10/08/2026";
-const VERSION_ACTUALIZACION = "v. 20260810";
+const FECHA_ACTUALIZACION = "19/08/2026";
+const VERSION_ACTUALIZACION = "v. 20260819";
 
 // Utilizar localStorage para mantener la sesión de caché sincronizada entre pestañas y navegaciones
 let cacheBuster = localStorage.getItem("APP_CACHE_BUSTER");
