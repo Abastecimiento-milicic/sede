@@ -673,6 +673,19 @@ function buildChartMes(rows) {
     return (c && c.demCnt) ? (c.demSum / c.demCnt) : null;
   });
 
+  const pAT_acum = [];
+  let sumaEntregadosATAcum = 0;
+  let sumaComprometidosAcum = 0;
+
+  for (let i = 0; i < months.length; i++) {
+    const at = qAT[i];
+    const comp = qAT[i] + qFT[i] + qNO[i];
+    sumaEntregadosATAcum += at;
+    sumaComprometidosAcum += comp;
+    const pctAcum = sumaComprometidosAcum ? (sumaEntregadosATAcum / sumaComprometidosAcum) * 100 : 0;
+    pAT_acum.push(pctAcum);
+  }
+
   const el = document.getElementById("chartMes");
   if (!el || !window.echarts) return;
 
@@ -692,10 +705,12 @@ function buildChartMes(rows) {
         const ft = byName["Respondidos FT"];
         const ne = byName["No respondidos"];
         const dem = byName["Promedio días de demora"];
+        const acum = byName["%AT Acumulado"];
 
         if (at) html += `🟩 Respondidos AT: <b>${fmtInt(qAT[at.dataIndex])}</b> (${_fmtNum1(at.value)}%)<br/>`;
         if (ft) html += `🟧 Respondidos FT: <b>${fmtInt(qFT[ft.dataIndex])}</b> (${_fmtNum1(ft.value)}%)<br/>`;
         if (ne) html += `🟥 No respondidos: <b>${fmtInt(qNO[ne.dataIndex])}</b> (${_fmtNum1(ne.value)}%)<br/>`;
+        if (acum && acum.value != null) html += `📈 %AT Acumulado: <b>${_fmtNum1(acum.value)}%</b><br/>`;
         if (dem && dem.value != null) html += `🔵 Demora prom.: <b>${Math.round(dem.value)}</b> días<br/>`;
         return html;
       }
@@ -868,6 +883,49 @@ function buildChartMes(rows) {
         zlevel: 0
       },
       {
+        name: "%AT Acumulado",
+        type: "line",
+        data: pAT_acum.map(v => +(+v).toFixed(2)),
+        showSymbol: true,
+        symbol: "circle",
+        symbolSize: 7,
+        showAllSymbol: true,
+        connectNulls: true,
+        lineStyle: { width: 3, type: "solid", color: "#c084fc" },
+        itemStyle: { color: "#c084fc", borderColor: "#fff", borderWidth: 2 },
+        label: {
+          show: true,
+          position: "bottom",
+          distance: 6,
+          formatter: (p) => {
+            const val = +p.data;
+            if (val == null || isNaN(val)) return "";
+            return val.toFixed(2).replace(".", ",") + "%";
+          },
+          backgroundColor: "rgba(255, 255, 255, 0.85)",
+          padding: [2, 4],
+          borderRadius: 3,
+          borderColor: "rgba(192, 132, 252, 0.4)",
+          borderWidth: 1,
+          textStyle: { fontWeight: 850, color: "#9333ea", fontSize: 10 }
+        },
+        emphasis: {
+          disabled: false,
+          scale: false,
+          label: {
+            show: true,
+            position: "bottom",
+            formatter: (p) => {
+              const val = +p.data;
+              if (val == null || isNaN(val)) return "";
+              return val.toFixed(2).replace(".", ",") + "%";
+            },
+            textStyle: { fontWeight: 850, color: "#9333ea", fontSize: 10 }
+          }
+        },
+        z: 6
+      },
+      {
         name: "Promedio días de demora",
         type: "line",
         yAxisIndex: 1,
@@ -1022,7 +1080,6 @@ function buildChartTendencia(rows) {
             warn: {
               fontWeight: 950,
               color: "#7f1d1d",
-              backgroundColor: "rgba(239,68,68,0.18)",
               borderColor: "#ef4444",
               borderWidth: 1,
               borderRadius: 4,
@@ -1033,23 +1090,23 @@ function buildChartTendencia(rows) {
         zlevel: 5, z: 5
       },
       {
-        name: "Respondidos AT % (Prom. mensual acumulado)",
+        name: "%AT Acumulado",
         type: "line",
         data: pAT_acum.map(v => +(+v).toFixed(2)),
         symbolSize: 7,
-        lineStyle: { width: 2, type: "dashed", color: COLORS.green },
-        itemStyle: { color: COLORS.green, borderColor: "#fff", borderWidth: 2, opacity: 0.9 },
+        lineStyle: { width: 3, type: "solid", color: "#c084fc" },
+        itemStyle: { color: "#c084fc", borderColor: "#fff", borderWidth: 2 },
         label: {
           show: true,
           position: "top",
           formatter: (p) => {
             const v = +p.data || 0;
             return (v < 78)
-              ? `{warn|⚠ ${_fmtPct(v)}}`
+              ? `{warn|? ${_fmtPct(v)}}`
               : `{ok|${_fmtPct(v)}}`;
           },
           rich: {
-            ok: { fontWeight: 900, color: COLORS.green },
+            ok: { fontWeight: 900, color: "#9333ea" },
             warn: {
               fontWeight: 950,
               color: "#7f1d1d",

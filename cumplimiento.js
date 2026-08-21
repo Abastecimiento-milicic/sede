@@ -906,14 +906,15 @@ function buildChartMes(rows) {
         data: pAT_acum.map(v => +(+v).toFixed(2)),
         showSymbol: true,
         symbol: "circle",
-        symbolSize: 1,
+        symbolSize: 7,
         showAllSymbol: true,
+        connectNulls: true,
         lineStyle: {
-          width: 3.5,
+          width: 3,
           type: "solid",
-          color: "#7c3aed"
+          color: "#c084fc"
         },
-        itemStyle: { color: "#7c3aed" },
+        itemStyle: { color: "#c084fc", borderColor: "#fff", borderWidth: 2 },
         label: {
           show: true,
           position: "bottom",
@@ -926,9 +927,9 @@ function buildChartMes(rows) {
           backgroundColor: "rgba(255, 255, 255, 0.85)",
           padding: [2, 4],
           borderRadius: 3,
-          borderColor: "rgba(124, 58, 237, 0.25)",
+          borderColor: "rgba(192, 132, 252, 0.4)",
           borderWidth: 1,
-          textStyle: { fontWeight: 850, color: "#6d28d9", fontSize: 10 }
+          textStyle: { fontWeight: 850, color: "#9333ea", fontSize: 10 }
         },
         emphasis: {
           disabled: false,
@@ -941,7 +942,7 @@ function buildChartMes(rows) {
               if (val == null || isNaN(val)) return "";
               return val.toFixed(2).replace(".", ",") + "%";
             },
-            textStyle: { fontWeight: 850, color: "#6d28d9", fontSize: 10 }
+            textStyle: { fontWeight: 850, color: "#9333ea", fontSize: 10 }
           }
         },
         z: 6
@@ -1112,23 +1113,23 @@ function buildChartTendencia(rows) {
         zlevel: 5, z: 5
       },
       {
-        name: "AT % (Prom. mensual acumulado)",
+        name: "%AT Acumulado",
         type: "line",
         data: pAT_acum.map(v => +(+v).toFixed(2)),
         symbolSize: 7,
-        lineStyle: { width: 2, type: "dashed", color: COLORS.green },
-        itemStyle: { color: COLORS.green, borderColor: "#fff", borderWidth: 2, opacity: 0.9 },
+        lineStyle: { width: 3, type: "solid", color: "#c084fc" },
+        itemStyle: { color: "#c084fc", borderColor: "#fff", borderWidth: 2 },
         label: {
           show: true,
           position: "top",
           formatter: (p) => {
             const v = +p.data || 0;
             return (v < 78)
-              ? `{warn|⚠ ${_fmtPct(v)}}`
+              ? `{warn|? ${_fmtPct(v)}}`
               : `{ok|${_fmtPct(v)}}`;
           },
           rich: {
-            ok: { fontWeight: 900, color: COLORS.green },
+            ok: { fontWeight: 900, color: "#9333ea" },
             warn: {
               fontWeight: 950,
               color: "#7f1d1d",
