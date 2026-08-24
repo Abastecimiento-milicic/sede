@@ -1176,21 +1176,19 @@ function escapeCSV(v) {
 }
 
 function downloadCSV(filename, rows, cols) {
-  const header = cols.map(escapeCSV).join(";");
-  const lines = rows.map(r => cols.map(c => escapeCSV(r[c])).join(";"));
-  const csv = [header, ...lines].join("\r\n");
-
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
-  URL.revokeObjectURL(url);
+  // Convertimos a Excel usando SheetJS (XLSX)
+  const data = [cols];
+  rows.forEach(r => {
+    data.push(cols.map(c => r[c]));
+  });
+  
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+  
+  // Cambiamos la extensión .csv por .xlsx
+  const xlsxFilename = filename.replace(/\.csv$/i, ".xlsx");
+  XLSX.writeFile(wb, xlsxFilename);
 }
 
 function getNoEntregadosRows(rows) {

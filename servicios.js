@@ -62,17 +62,16 @@
 
   function downloadCSV(rows) {
       if (!rows.length) return alert("No hay datos seleccionados para descargar.");
-      const headerRow = headers.join(";");
-      const contentRows = rows.map(r => headers.map(h => (r[h] ?? "").toString().replace(/;/g, ",")).join(";"));
-      const csvContent = "\ufeff" + [headerRow, ...contentRows].join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", "Seleccion_Servicios.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      
+      const data = [headers];
+      rows.forEach(r => {
+          data.push(headers.map(h => r[h]));
+      });
+      
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Servicios");
+      XLSX.writeFile(wb, "Seleccion_Servicios.xlsx");
   }
 
   function applyAll() {
