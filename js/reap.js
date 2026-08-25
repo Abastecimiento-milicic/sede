@@ -42,7 +42,7 @@ function toNumAny(v) {
 /* ============================
    CONFIG
    ============================ */
-const csvUrl = "./CUMPLIMIENTO_SEDE.csv";  // nombre EXACTO para Sede
+const csvUrl = "./data/R1 - REPORTE CUMPLIMIENTO REAP ACUMULADO.csv";  // nombre EXACTO para REAP
 const DELIM = ";";
 
 const FECHA_COL = "FECHA ENTREGA ESPERADA";
@@ -59,7 +59,7 @@ function avgDelay(rows) {
 
 const CLIENT_CANDIDATES = ["CLIENTE / OBRA", "CLIENTE NRO.", "CLIENTE"];
 
-// NUEVOS FILTROS (con "CLASIFICACION" agregada para Sede)
+// NUEVOS FILTROS
 const CENTRO_CANDIDATES = ["CENTRO"];
 const CLASIF2_CANDIDATES = ["CLASIFICACION 2", "CLASIFICACIÓN 2", "CLASIFICACION2", "CLASIFICACION_2", "CLASIFICACION"];
 const GCOC_CANDIDATES = ["GRUPO DE COMPRAS OC", "GRUPO DE COMPRAS_OC", "GRUPO DE COMPRA OC"];
@@ -834,7 +834,7 @@ function buildChartMes(rows) {
             fontWeight: 800,
             fontSize: 11,
             position: "end",
-            backgroundColor: '#1e3a8a', // Azul oscuro adaptado al tema
+            backgroundColor: '#1e3a8a',
             color: '#fff',
             padding: [4, 6],
             borderRadius: 4
@@ -909,11 +909,7 @@ function buildChartMes(rows) {
         symbolSize: 7,
         showAllSymbol: true,
         connectNulls: true,
-        lineStyle: {
-          width: 3,
-          type: "solid",
-          color: "#c084fc"
-        },
+        lineStyle: { width: 3, type: "solid", color: "#c084fc" },
         itemStyle: { color: "#c084fc", borderColor: "#fff", borderWidth: 2 },
         label: {
           show: true,
@@ -1372,7 +1368,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const comp = safeFilePart(selLabel("compradorSelect"));
         const mes = safeFilePart(selLabel("mesSelect"));
 
-        const filename = `NO_ENTREGADOS_${cliente}_${c2}_${gc}_${comp}_${mes}.csv`;
+        const filename = `NO_ENTREGADOS_REAP_${cliente}_${c2}_${gc}_${comp}_${mes}.csv`;
         downloadCSV(filename, noRows, cols);
       });
 
@@ -1393,7 +1389,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const comp = safeFilePart(selLabel("compradorSelect"));
         const mes = safeFilePart(selLabel("mesSelect"));
 
-        const filename = `PEDIDOS_INCOMPLETOS_${cliente}_${c2}_${gc}_${comp}_${mes}.csv`;
+        const filename = `PEDIDOS_INCOMPLETOS_REAP_${cliente}_${c2}_${gc}_${comp}_${mes}.csv`;
         downloadCSV(filename, incRows, cols);
       });
 

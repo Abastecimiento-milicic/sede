@@ -1,5 +1,5 @@
 (function() {
-  const csvUrl = "./REPORTE CUMPLIMIENTO SS Y SUB - SEDE.csv";
+  const csvUrl = "./data/REPORTE CUMPLIMIENTO SS Y SUB - SEDE.csv";
   const DELIM = ";";
 
   const CLIENT_COL_NAME = "CLIENTE";

@@ -72,7 +72,7 @@ function parseDelimited(text, delimiter = ";") {
 /* ============================
    CONFIG
    ============================ */
-const csvUrl = "./R1 - REPORTE CUMPLIMIENTO PI ACUMULADO.csv";
+const csvUrl = "./data/R1 - REPORTE CUMPLIMIENTO PI ACUMULADO.csv";
 const DELIM = ";";
 
 const FECHA_COL = "FECHA ENTREGA ESPERADA";

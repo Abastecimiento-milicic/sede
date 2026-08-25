@@ -121,7 +121,7 @@ function getSelValues(id) {
 /* ============================
    CONFIG
    ============================ */
-const csvUrl = "./CUMPLIMIENTO_SEDE.csv";
+const csvUrl = "./data/R1 - REPORTE CUMPLIMIENTO REAP ACUMULADO.csv";
 const DELIM = ";";
 
 const CLIENT_COL = "CLIENTE";

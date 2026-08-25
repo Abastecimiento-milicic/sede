@@ -42,11 +42,12 @@ function toNumAny(v) {
 /* ============================
    CONFIG
    ============================ */
-const csvUrl = "./R1 - REPORTE CUMPLIMIENTO REAP ACUMULADO.csv";  // nombre EXACTO para REAP
+const csvUrl = "./data/R1 - REPORTE CUMPLIMIENTO PI ACUMULADO.csv";  // nombre EXACTO para PI
 const DELIM = ";";
 
 const FECHA_COL = "FECHA ENTREGA ESPERADA";
-const DEMORA_COL = "DIAS DE DEMORA";
+const DEMORA_CANDIDATES = ["dDIAS RESPUESTA", "dDIAS DEMORA", "DIAS DE DEMORA"];
+let DEMORA_COL = "dDIAS RESPUESTA";
 
 function avgDelay(rows) {
   let s = 0, c = 0;
@@ -62,12 +63,11 @@ const CLIENT_CANDIDATES = ["CLIENTE / OBRA", "CLIENTE NRO.", "CLIENTE"];
 // NUEVOS FILTROS
 const CENTRO_CANDIDATES = ["CENTRO"];
 const CLASIF2_CANDIDATES = ["CLASIFICACION 2", "CLASIFICACIÓN 2", "CLASIFICACION2", "CLASIFICACION_2", "CLASIFICACION"];
-const GCOC_CANDIDATES = ["GRUPO DE COMPRAS OC", "GRUPO DE COMPRAS_OC", "GRUPO DE COMPRA OC"];
-const COMPRADOR_CANDIDATES = ["OPERADOR OC", "OPERADOR_OC", "COMPRADOR"];
+const GCOC_CANDIDATES = ["GRUPO DE COMPRAS SOLPED", "GRUPO DE COMPRA SOLPED", "GRUPO DE COMPRA"];
 
-const AT_COL = "ENTREGADOS AT";
-const FT_COL = "ENTREGADOS FT";
-const NO_COL = "NO ENTREGADOS";
+const AT_COL = "RESPONDIDO AT";
+const FT_COL = "RESPONDIDO FT";
+const NO_COL = "NO RESPONDIDO";
 
 /* ============================
    COLORES (TEMA AZUL PREMIUM)
@@ -92,7 +92,6 @@ let CLIENT_COL = null;
 let CENTRO_COL = null;
 let CLASIF2_COL = null;
 let GCOC_COL = null;
-let COMPRADOR_COL = null;
 
 let chartMes = null;
 let chartTendencia = null;
@@ -355,8 +354,6 @@ function filteredRowsNoMes() {
   if (c2s.length && CLASIF2_COL) rows = rows.filter(r => c2s.includes(clean(r[CLASIF2_COL])));
   const gcs = getSelValues("gcocSelect");
   if (gcs.length && GCOC_COL) rows = rows.filter(r => gcs.includes(clean(r[GCOC_COL])));
-  const compradores = getSelValues("compradorSelect");
-  if (compradores.length && COMPRADOR_COL) rows = rows.filter(r => compradores.includes(clean(r[COMPRADOR_COL])));
   return rows;
 }
 
@@ -423,21 +420,6 @@ function renderGcoc(rowsBase) {
   const sel = document.getElementById("gcocSelect");
   if (sel) sel.disabled = false;
   fillSelect("gcocSelect", vals, "Todos");
-}
-
-function renderCompradores(rowsBase) {
-  const hint = document.getElementById("compradorHint");
-  if (!COMPRADOR_COL) {
-    if (hint) hint.textContent = "Columna: (no encontrada)";
-    const sel = document.getElementById("compradorSelect");
-    if (sel) { sel.disabled = true; sel.innerHTML = `<option value="">Todos</option>`; }
-    return;
-  }
-  if (hint) hint.textContent = `Columna: ${COMPRADOR_COL}`;
-  const vals = uniqSorted(rowsBase.map(r => r[COMPRADOR_COL]));
-  const sel = document.getElementById("compradorSelect");
-  if (sel) sel.disabled = false;
-  fillSelect("compradorSelect", vals, "Todos");
 }
 
 function buildMesSelect(rows) {
@@ -719,15 +701,15 @@ function buildChartMes(rows) {
         const axis = params?.[0]?.axisValue ?? "";
         let html = `<b>${axis}</b><br/>`;
         const byName = Object.fromEntries(params.map(p => [p.seriesName, p]));
-        const at = byName["Entregados AT"];
-        const ft = byName["Entregados FT"];
-        const ne = byName["No entregados"];
+        const at = byName["Respondidos AT"];
+        const ft = byName["Respondidos FT"];
+        const ne = byName["No respondidos"];
         const dem = byName["Promedio días de demora"];
         const acum = byName["%AT Acumulado"];
 
-        if (at) html += `🟩 AT: <b>${fmtInt(qAT[at.dataIndex])}</b> (${_fmtNum1(at.value)}%)<br/>`;
-        if (ft) html += `🟧 FT: <b>${fmtInt(qFT[ft.dataIndex])}</b> (${_fmtNum1(ft.value)}%)<br/>`;
-        if (ne) html += `🟥 NE: <b>${fmtInt(qNO[ne.dataIndex])}</b> (${_fmtNum1(ne.value)}%)<br/>`;
+        if (at) html += `🟩 Respondidos AT: <b>${fmtInt(qAT[at.dataIndex])}</b> (${_fmtNum1(at.value)}%)<br/>`;
+        if (ft) html += `🟧 Respondidos FT: <b>${fmtInt(qFT[ft.dataIndex])}</b> (${_fmtNum1(ft.value)}%)<br/>`;
+        if (ne) html += `🟥 No respondidos: <b>${fmtInt(qNO[ne.dataIndex])}</b> (${_fmtNum1(ne.value)}%)<br/>`;
         if (acum && acum.value != null) html += `📈 %AT Acumulado: <b>${_fmtNum1(acum.value)}%</b><br/>`;
         if (dem && dem.value != null) html += `🔵 Demora prom.: <b>${Math.round(dem.value)}</b> días<br/>`;
         return html;
@@ -765,7 +747,7 @@ function buildChartMes(rows) {
     ],
     series: [
       {
-        name: "Entregados AT",
+        name: "Respondidos AT",
         type: "bar",
         stack: "pct",
         data: pAT.map(v => {
@@ -846,7 +828,7 @@ function buildChartMes(rows) {
         zlevel: 0
       },
       {
-        name: "Entregados FT",
+        name: "Respondidos FT",
         type: "bar",
         stack: "pct",
         data: pFT.map(v => +(+v).toFixed(4)),
@@ -874,7 +856,7 @@ function buildChartMes(rows) {
         zlevel: 0
       },
       {
-        name: "No entregados",
+        name: "No respondidos",
         type: "bar",
         stack: "pct",
         data: pNO.map(v => +(+v).toFixed(4)),
@@ -1078,7 +1060,7 @@ function buildChartTendencia(rows) {
     },
     series: [
       {
-        name: "A Tiempo %",
+        name: "Respondidos AT %",
         type: "line",
         data: pAT.map(v => +(+v).toFixed(2)),
         symbolSize: 7,
@@ -1098,7 +1080,6 @@ function buildChartTendencia(rows) {
             warn: {
               fontWeight: 950,
               color: "#7f1d1d",
-              backgroundColor: "rgba(239,68,68,0.18)",
               borderColor: "#ef4444",
               borderWidth: 1,
               borderRadius: 4,
@@ -1140,7 +1121,7 @@ function buildChartTendencia(rows) {
         zlevel: 4, z: 4
       },
       {
-        name: "Fuera Tiempo %",
+        name: "Respondidos FT %",
         type: "line",
         data: pFT.map(v => +(+v).toFixed(2)),
         symbolSize: 7,
@@ -1150,7 +1131,7 @@ function buildChartTendencia(rows) {
         zlevel: 5, z: 5
       },
       {
-        name: "No Entregados %",
+        name: "No Respondidos %",
         type: "line",
         data: pNO.map(v => +(+v).toFixed(2)),
         symbolSize: 7,
@@ -1191,21 +1172,12 @@ function downloadCSV(filename, rows, cols) {
   XLSX.writeFile(wb, xlsxFilename);
 }
 
-function getNoEntregadosRows(rows) {
-  return rows.filter(r => toNumber(r[NO_COL]) > 0);
-}
-
-function getIncompletosRows(rows) {
+function getNoCumplidosRows(rows) {
+  const ESTADO_ITEM_COL = "ESTADO ITEM";
   return rows.filter(r => {
-    const estado = clean(r["ESTADO ITEM"]).toUpperCase();
-    return estado === "RESPONDIDO" || estado === "INCOMPLETO";
+    const estado = (r[ESTADO_ITEM_COL] || "").toString().trim().toUpperCase();
+    return estado !== "CUMPLIDO" && estado !== "PROCESADO";
   });
-}
-
-function updateIncompletosCount() {
-  const rowsFilt = filteredRowsByAll();
-  const count = getIncompletosRows(rowsFilt).length;
-  setText("cumpl_countIncompletos", fmtInt(count));
 }
 
 /* ============================
@@ -1228,14 +1200,6 @@ function applyAll() {
   })();
   renderGcoc(baseParaGc);
 
-  const baseParaComprador = (() => {
-    let r = baseParaGc;
-    const gcs = getSelValues("gcocSelect");
-    if (gcs.length && GCOC_COL) r = r.filter(x => gcs.includes(clean(x[GCOC_COL])));
-    return r;
-  })();
-  renderCompradores(baseParaComprador);
-
   const rows = filteredRowsNoMes();
 
   const months = buildMesSelect(rows);
@@ -1245,7 +1209,6 @@ function applyAll() {
 
   buildChartMes(rows);
   buildChartTendencia(rows);
-  updateIncompletosCount();
 }
 
 /* ============================
@@ -1289,14 +1252,19 @@ window.addEventListener("DOMContentLoaded", () => {
 
       CLIENT_COL = CLIENT_CANDIDATES.find(c => headers.includes(c));
       if (!CLIENT_COL) {
-        showError("No encuentro columna CLIENTE. Probé: " + CLIENT_CANDIDATES.join(" / "));
+        showError("No encuentro columna CLIENTE Obra/Centro de costo. Probé: " + CLIENT_CANDIDATES.join(" / "));
         return;
       }
 
       CENTRO_COL = CENTRO_CANDIDATES.find(c => headers.includes(c)) || null;
       CLASIF2_COL = CLASIF2_CANDIDATES.find(c => headers.includes(c)) || null;
       GCOC_COL = GCOC_CANDIDATES.find(c => headers.includes(c)) || null;
-      COMPRADOR_COL = COMPRADOR_CANDIDATES.find(c => headers.includes(c)) || null;
+
+      // Detect Demora Column dynamically
+      const detectedDemora = DEMORA_CANDIDATES.find(c => headers.includes(c));
+      if (detectedDemora) {
+        DEMORA_COL = detectedDemora;
+      }
 
       const required = [FECHA_COL, AT_COL, FT_COL, NO_COL];
       const missing = required.filter(c => !headers.includes(c));
@@ -1309,7 +1277,6 @@ window.addEventListener("DOMContentLoaded", () => {
       setText("centroHint", CENTRO_COL ? `Columna: ${CENTRO_COL}` : "Columna: (no encontrada)");
       setText("clasif2Hint", CLASIF2_COL ? `Columna: ${CLASIF2_COL}` : "Columna: (no encontrada)");
       setText("gcocHint", GCOC_COL ? `Columna: ${GCOC_COL}` : "Columna: (no encontrada)");
-      setText("compradorHint", COMPRADOR_COL ? `Columna: ${COMPRADOR_COL}` : "Columna: (no encontrada)");
 
       renderClientes();
       applyAll();
@@ -1321,8 +1288,6 @@ window.addEventListener("DOMContentLoaded", () => {
         enforceAllOption(e.target);
         const gc = document.getElementById("gcocSelect");
         if (gc) { gc.selectedIndex = 0; enforceAllOption(gc); }
-        const comp = document.getElementById("compradorSelect");
-        if (comp) { comp.selectedIndex = 0; enforceAllOption(comp); }
         applyAll();
       });
 
@@ -1332,13 +1297,10 @@ window.addEventListener("DOMContentLoaded", () => {
       });
 
       document.getElementById("gcocSelect")?.addEventListener("change", (e) => { enforceAllOption(e.target); applyAll(); });
-      document.getElementById("compradorSelect")?.addEventListener("change", (e) => { enforceAllOption(e.target); applyAll(); });
       document.getElementById("clasif2Select")?.addEventListener("change", (e) => {
         enforceAllOption(e.target);
         const gc = document.getElementById("gcocSelect");
         if (gc) { gc.selectedIndex = 0; enforceAllOption(gc); }
-        const comp = document.getElementById("compradorSelect");
-        if (comp) { comp.selectedIndex = 0; enforceAllOption(comp); }
         applyAll();
       });
 
@@ -1348,15 +1310,14 @@ window.addEventListener("DOMContentLoaded", () => {
         const rows = filteredRowsNoMes();
         const months = [...new Set(rows.map(getMonthKeyFromRow).filter(Boolean))].sort();
         updateKPIsMonthly(rows, months);
-        updateIncompletosCount();
       });
 
-      document.getElementById("btnDownloadNO")?.addEventListener("click", () => {
+      document.getElementById("btnDownloadNoCumplidos")?.addEventListener("click", () => {
         const rowsFilt = filteredRowsByAll();
-        const noRows = getNoEntregadosRows(rowsFilt);
+        const noCumplidosRows = getNoCumplidosRows(rowsFilt);
 
-        if (!noRows.length) {
-          alert("No hay NO ENTREGADOS para el filtro actual.");
+        if (!noCumplidosRows.length) {
+          alert("No hay registros NO CUMPLIDOS para el filtro actual.");
           return;
         }
 
@@ -1365,32 +1326,10 @@ window.addEventListener("DOMContentLoaded", () => {
         const cliente = safeFilePart(selLabel("clienteSelect"));
         const c2 = safeFilePart(selLabel("clasif2Select"));
         const gc = safeFilePart(selLabel("gcocSelect"));
-        const comp = safeFilePart(selLabel("compradorSelect"));
         const mes = safeFilePart(selLabel("mesSelect"));
 
-        const filename = `NO_ENTREGADOS_REAP_${cliente}_${c2}_${gc}_${comp}_${mes}.csv`;
-        downloadCSV(filename, noRows, cols);
-      });
-
-      document.getElementById("cumpl_btnDownloadIncompletos")?.addEventListener("click", () => {
-        const rowsFilt = filteredRowsByAll();
-        const incRows = getIncompletosRows(rowsFilt);
-
-        if (!incRows.length) {
-          alert("No hay pedidos INCOMPLETOS para el filtro actual.");
-          return;
-        }
-
-        const cols = headers.slice();
-
-        const cliente = safeFilePart(selLabel("clienteSelect"));
-        const c2 = safeFilePart(selLabel("clasif2Select"));
-        const gc = safeFilePart(selLabel("gcocSelect"));
-        const comp = safeFilePart(selLabel("compradorSelect"));
-        const mes = safeFilePart(selLabel("mesSelect"));
-
-        const filename = `PEDIDOS_INCOMPLETOS_REAP_${cliente}_${c2}_${gc}_${comp}_${mes}.csv`;
-        downloadCSV(filename, incRows, cols);
+        const filename = `NO_CUMPLIDOS_${cliente}_${c2}_${gc}_${mes}.csv`;
+        downloadCSV(filename, noCumplidosRows, cols);
       });
 
       setHTML("msg", "");
