@@ -4,7 +4,7 @@
   // CONFIGURACIÓN DE ACTUALIZACIÓN (Cargada desde last-update.js)
   // ============================================================================
   const FECHA_ACTUALIZACION = window.FECHA_ACTUALIZACION || "01/09/2026";
-  const VERSION_ACTUALIZACION = window.VERSION_ACTUALIZACION || "v. 20260901";
+  const VERSION_ACTUALIZACION = window.VERSION_ACTUALIZACION || "v. 20260901_2";
   // ============================================================================
 
   const STORAGE_KEY = "abastecimiento_theme";
