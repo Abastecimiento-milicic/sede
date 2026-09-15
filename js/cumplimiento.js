@@ -543,7 +543,10 @@ function setDelta(el, text, cls) {
    KPIs UI UPDATERS
    ============================ */
 function updateKPIsGeneral(rows) {
-  const t = calcTotals(rows);
+  const currentMonthKey = monthKey(new Date());
+  const validRows = rows.filter(r => getMonthKeyFromRow(r) !== currentMonthKey);
+
+  const t = calcTotals(validRows);
   const pctAT = t.total ? t.at / t.total : NaN;
   const pctFT = t.total ? t.ft / t.total : NaN;
   const pctNO = t.total ? t.no / t.total : NaN;
@@ -555,7 +558,7 @@ function updateKPIsGeneral(rows) {
   const elAT = document.getElementById("kpiATpct");
   if (elAT) elAT.style.color = (isFinite(pctAT) && pctAT >= 0.78) ? "#16a34a" : "#ef4444";
 
-  const avgG = avgDelay(rows);
+  const avgG = avgDelay(validRows);
   setText("kpiDemoraAvg", isNaN(avgG) ? "-" : (Math.round(avgG) + " d"));
   const elDemG = document.getElementById("kpiDemoraAvg");
   if (elDemG) elDemG.style.color = (!isNaN(avgG) && avgG > 7) ? "#ef4444" : "#16a34a";
@@ -570,7 +573,10 @@ function updateKPIsGeneral(rows) {
 function updateKPIsMonthly(rows, months) {
   const ms = getSelValues("mesSelect");
   if (!ms.length) {
-    const t = calcTotals(rows);
+    const currentMonthKey = monthKey(new Date());
+    const validRows = rows.filter(r => getMonthKeyFromRow(r) !== currentMonthKey);
+
+    const t = calcTotals(validRows);
     const pctAT = t.total ? t.at / t.total : NaN;
     const pctFT = t.total ? t.ft / t.total : NaN;
     const pctNO = t.total ? t.no / t.total : NaN;
@@ -584,7 +590,7 @@ function updateKPIsMonthly(rows, months) {
     setText("kpiFTmes", fmtPct01(pctFT));
     setText("kpiNOmes", fmtPct01(pctNO));
 
-    const avgM = avgDelay(rows);
+    const avgM = avgDelay(validRows);
     setText("kpiDemoraMes", isNaN(avgM) ? "-" : (Math.round(avgM) + " d"));
     const elDemM = document.getElementById("kpiDemoraMes");
     if (elDemM) elDemM.style.color = (!isNaN(avgM) && avgM > 7) ? "#ef4444" : "#16a34a";
@@ -593,9 +599,9 @@ function updateKPIsMonthly(rows, months) {
     const ftSub = document.getElementById("kpiFTmesSub");
     const noSub = document.getElementById("kpiNOmesSub");
 
-    if (atSub) atSub.textContent = `Cant: ${fmtInt(t.at)} · Todos los meses`;
-    if (ftSub) ftSub.textContent = `Cant: ${fmtInt(t.ft)} · Todos los meses`;
-    if (noSub) noSub.textContent = `Cant: ${fmtInt(t.no)} · Todos los meses`;
+    if (atSub) atSub.textContent = `Cant: ${fmtInt(t.at)} · Todos los meses (sin mes vigente)`;
+    if (ftSub) ftSub.textContent = `Cant: ${fmtInt(t.ft)} · Todos los meses (sin mes vigente)`;
+    if (noSub) noSub.textContent = `Cant: ${fmtInt(t.no)} · Todos los meses (sin mes vigente)`;
     return;
   }
 
@@ -694,12 +700,18 @@ function buildChartMes(rows) {
   const pAT_acum = [];
   let sumaEntregadosATAcum = 0;
   let sumaComprometidosAcum = 0;
+  const currentMonthKey = monthKey(new Date());
 
   for (let i = 0; i < months.length; i++) {
     const at = qAT[i];
     const comp = qAT[i] + qFT[i] + qNO[i];
-    sumaEntregadosATAcum += at;
-    sumaComprometidosAcum += comp;
+    
+    // El mes vigente no se suma al acumulado
+    if (months[i] !== currentMonthKey) {
+      sumaEntregadosATAcum += at;
+      sumaComprometidosAcum += comp;
+    }
+    
     const pctAcum = sumaComprometidosAcum ? (sumaEntregadosATAcum / sumaComprometidosAcum) * 100 : 0;
     pAT_acum.push(pctAcum);
   }
@@ -1026,10 +1038,17 @@ function buildChartTendencia(rows) {
 
   const pAT_acum = [];
   let accAT = 0;
+  let countAcum = 0;
+  const currentMonthKey = monthKey(new Date());
+
   for (let i = 0; i < pAT.length; i++) {
-    const v = +pAT[i] || 0;
-    accAT += v;
-    pAT_acum.push(accAT / (i + 1));
+    // El mes vigente no se suma al acumulado
+    if (months[i] !== currentMonthKey) {
+      const v = +pAT[i] || 0;
+      accAT += v;
+      countAcum++;
+    }
+    pAT_acum.push(countAcum ? (accAT / countAcum) : 0);
   }
 
   const pFT = months.map(m => {
