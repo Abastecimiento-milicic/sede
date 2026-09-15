@@ -554,7 +554,7 @@ function updateKPIsGeneral(rows) {
   setText("kpiTotal", fmtInt(t.total));
 
   setText("kpiATpct", fmtPct01(pctAT));
-  setText("kpiATqty", `Cantidad: ${fmtInt(t.at)}`);
+  setText("kpiATqty", `Cantidad: ${fmtInt(t.at)} (sin mes vigente)`);
   const elAT = document.getElementById("kpiATpct");
   if (elAT) elAT.style.color = (isFinite(pctAT) && pctAT >= 0.78) ? "#16a34a" : "#ef4444";
 
@@ -564,10 +564,10 @@ function updateKPIsGeneral(rows) {
   if (elDemG) elDemG.style.color = (!isNaN(avgG) && avgG > 7) ? "#ef4444" : "#16a34a";
 
   setText("kpiFTpct", fmtPct01(pctFT));
-  setText("kpiFTqty", `Cantidad: ${fmtInt(t.ft)}`);
+  setText("kpiFTqty", `Cantidad: ${fmtInt(t.ft)} (sin mes vigente)`);
 
   setText("kpiNOpct", fmtPct01(pctNO));
-  setText("kpiNOqty", `Cantidad: ${fmtInt(t.no)}`);
+  setText("kpiNOqty", `Cantidad: ${fmtInt(t.no)} (sin mes vigente)`);
 }
 
 function updateKPIsMonthly(rows, months) {
