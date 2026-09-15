@@ -15,6 +15,11 @@
  */
 
 (function () {
+  // Prevenir el parpadeo del loader si ya hemos cargado datos en esta sesión
+  if (sessionStorage.getItem("DATA_LOADED_ONCE")) {
+    document.write('<style id="anti-flicker-loader">#loader { display: none !important; }</style>');
+  }
+
   const DB_NAME = "appDataCache";
   const DB_VERSION = 1;
   const STORE_NAME = "responses";
@@ -59,13 +64,21 @@
       });
 
       if (cached && cached.data) {
+        // Cache hit: make sure the loader is hidden
+        const loader = document.getElementById("loader");
+        if (loader) loader.classList.add("hidden");
         return cached.data;
       }
     } catch (_) {
       // IndexedDB unavailable — fall through to network
     }
 
-    // Network fetch
+    // Cache miss or network fetch required: show loader
+    const antiFlicker = document.getElementById("anti-flicker-loader");
+    if (antiFlicker) antiFlicker.remove();
+    const loader = document.getElementById("loader");
+    if (loader) loader.classList.remove("hidden");
+
     let resp;
     try {
         resp = await fetch(url, { redirect: 'manual' });
@@ -89,6 +102,7 @@
       const tx = db.transaction(STORE_NAME, "readwrite");
       const store = tx.objectStore(STORE_NAME);
       store.put({ url, data });
+      sessionStorage.setItem("DATA_LOADED_ONCE", "1");
     } catch (_) {
       // silently ignore cache-write errors
     }
