@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
@@ -7,131 +7,243 @@
   <meta http-equiv="Expires" content="0" />
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="js/cache-utils.js?v=20260924_141733"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script src="js/cache-utils.js?v=20260924_143500"></script>
   <title>ABASTECIMIENTO - SERVICIOS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/base.css?v=20260924_141733" />
-  <link rel="stylesheet" href="css/cumplimiento.css?v=20260924_141733" />
-  <script src="js/last-update.js?v=20260924_141733"></script>
-  <script src="js/theme.js?v=20260924_141733"></script>
+  <link rel="stylesheet" href="css/base.css?v=20260924_143500" />
+  <link rel="stylesheet" href="css/cumplimiento.css?v=20260924_143500" />
+  <script src="js/last-update.js?v=20260924_143500"></script>
+  <script src="js/theme.js?v=20260924_143500"></script>
   
   <style>
+    :root {
+      --col-brand: #0d9488;
+      --col-brand-dk: #0f766e;
+      --col-brand-lt: #14b8a6;
+      --col-brand-gradient: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+    }
+
     /* 1. KPIs de resumen */
-  .kpi-mini-box {
-    height: 70px !important;
-    background: #ffffff;
-    border: 2px solid #3b82f6;
-    border-radius: 8px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-    .kpi-mini-value { display: block; font-size: 2rem; font-weight: 800; color: #3b82f6; line-height: 1; }
-    .kpi-mini-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; margin-top: 5px; }
+    .kpi-mini-box {
+      height: 70px !important;
+      background: #ffffff;
+      border: 2px solid #3b82f6;
+      border-radius: 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .kpi-mini-value { 
+      display: block; 
+      font-size: 2rem; 
+      font-weight: 800; 
+      color: #3b82f6; 
+      line-height: 1; 
+    }
+    .kpi-mini-label { 
+      font-size: 0.75rem; 
+      color: #64748b; 
+      text-transform: uppercase; 
+      font-weight: 700; 
+      margin-top: 5px; 
+    }
 
-    /* 2. Filtros: Distribución de anchos y letra más grande */
+    /* 2. Filtros: Distribución de anchos */
+    .filters-7 { 
+      display: grid !important; 
+      grid-template-columns: 1.1fr 0.9fr 0.8fr 2.0fr 0.7fr 2.0fr 1fr !important; 
+      gap: 12px; 
+      padding: 15px !important; 
+      align-items: start;
+    }
+    .filter-wide { width: 100%; }
+    .filter-narrow { width: 100%; }
 
-.filters-7 { 
-    display: grid !important; 
-    /* Orden: Cliente(1.1) | Centro(0.9) | Periodo(0.8) | Estado(2.0) | G.Compra(0.7) | Estado Item(2.0) | Total(1) */
-    grid-template-columns: 1.1fr 0.9fr 0.8fr 2.0fr 0.7fr 2.0fr 1fr !important; 
-    gap: 12px; 
-    padding: 15px !important; 
-    align-items: start;
-}
-   .filter-wide { width: 100%; }
-.filter-narrow { width: 100%; }
+    .filter {
+      display: flex;
+      flex-direction: column;
+    }
 
-.multi-select {
-    height: 110px !important;
-    font-size: 0.85rem !important;
-    width: 100%;
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    padding: 4px;
-}
+    .filter-kpi {
+      display: flex;
+      flex-direction: column;
+    }
 
-.filter label {
-    display: inline-block;
-    background-color: var(--col-brand);
-    color: white;
-    padding: 2px 8px; /* Más compacto */
-    border-radius: 4px;
-    font-size: 0.75rem; /* Tamaño reducido */
-    font-weight: 700;
-    margin-bottom: 10px;
-    text-transform: uppercase;
-}
     .multi-select {
-        width: 100% !important;
-        height: 110px !important;
-        font-size: 0.9rem !important; /* Letra interna más grande */
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
+      width: 100% !important;
+      height: 110px !important;
+      font-size: 0.85rem !important;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 4px;
     }
 
-#btnDownloadSelection {
-    width: 100% !important;
-    height: 32px !important; /* Más bajo */
-    font-size: 0.75rem !important; /* Letra más chica */
-    margin-top: 0 !important;
-}
-
-#btnDownloadSelection:hover {
-    background-color: #f8fafc;
-}
-
-    /* 4. Tabla: Líneas divisorias marcadas y columnas de cantidad compactas */
-    table { width: 100%; border-collapse: collapse; font-family: 'Source Sans 3', sans-serif; font-size: 0.8rem; min-width: 2200px; }
-    
-th { 
-    background: #f8fafc; 
-    color: #1e293b; 
-    font-weight: 700; 
-    padding: 10px 8px; 
-    text-align: left; 
-    border-bottom: 3px solid #3b82f6 !important; 
-    vertical-align: bottom;
-    /* Nuevas propiedades para títulos largos */
-    white-space: normal !important; 
-    line-height: 1.2;
-    min-width: 100px; /* Evita que se compriman demasiado */
-}
-
-    td { 
-        padding: 10px 8px; 
-        border-bottom: 1px solid #cbd5e1 !important; /* Línea entre registros marcada */
-        white-space: nowrap; 
+    .filter label, .filter-kpi label {
+      display: inline-block;
+      background-color: #0d9488 !important;
+      color: white !important;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      align-self: flex-start;
     }
 
-    tbody tr:hover { background-color: #f1f5f9 !important; }
-
-    /* Compactar columnas de cantidad */
-    th:nth-child(4), td:nth-child(4),
-    th:nth-child(5), td:nth-child(5),
-    th:nth-child(6), td:nth-child(6),
-    th:nth-child(7), td:nth-child(7) {
-        min-width: 85px !important;
-        max-width: 100px !important;
-        text-align: center;
-        white-space: normal;
+    .panel-title {
+      background: #0d9488 !important;
+      color: #ffffff !important;
     }
 
-    /* Estilos de scroll */
-    .top-scroll-wrapper { width: 100%; overflow-x: auto; overflow-y: hidden; height: 18px; margin-top: 20px; background: #f1f5f9; border-radius: 8px 8px 0 0; }
-    .fake-content { height: 1px; }
-    .master-wrapper { width: 100%; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; background: white; }
+    #btnDownloadSelection, #serv_btnDownloadSelection {
+      width: 100% !important;
+      height: 32px !important;
+      font-size: 0.75rem !important;
+      margin-top: 8px !important;
+      border: 1px solid #3b82f6;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
 
-    /* Colores por estado */
-    .row-verde { background-color: #dcfce7 !important; color: #166534; }
-    .row-rojo { background-color: #fee2e2 !important; color: #991b1b; }
-    .cell-rojo { background-color: #fecaca !important; color: #991b1b; font-weight: 600; text-align: center; border-radius: 4px; }
-    .cell-verde { background-color: #bbf7d0 !important; color: #166534; font-weight: 600; text-align: center; border-radius: 4px; }
+    #btnDownloadSelection:hover, #serv_btnDownloadSelection:hover {
+      background-color: #3b82f6;
+      color: white;
+    }
+
+    /* 3. Tabla Resumen de Pedidos por Estado */
+    .serv-resumen-table { 
+      width: 100%; 
+      max-width: 950px; 
+      margin: 0 auto; 
+      border-collapse: separate;
+      border-spacing: 0;
+      font-family: 'Source Sans 3', sans-serif; 
+      font-size: 0.88rem; 
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    .serv-resumen-table th { 
+      background: #f8fafc; 
+      color: #1e293b; 
+      font-weight: 700; 
+      padding: 12px 18px; 
+      text-align: left; 
+      border-bottom: 2px solid #3b82f6 !important; 
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      user-select: none;
+    }
+    .serv-resumen-table th.sortable {
+      cursor: pointer;
+      transition: background-color 0.15s, color 0.15s;
+    }
+    .serv-resumen-table th.sortable:hover {
+      background: #f1f5f9;
+      color: #2563eb;
+    }
+    .serv-resumen-table th.sortable span {
+      display: inline-block;
+      margin-left: 4px;
+      font-size: 0.75rem;
+    }
+    .serv-resumen-table td { 
+      padding: 10px 18px; 
+      border-bottom: 1px solid #f1f5f9 !important;
+      color: #334155;
+      vertical-align: middle;
+    }
+    .serv-resumen-table tbody tr:last-child td {
+      border-bottom: none !important;
+    }
+    .serv-resumen-table tbody tr:hover { 
+      background-color: #f8fafc !important; 
+    }
+    .serv-resumen-table tfoot tr {
+      background-color: #f1f5f9 !important;
+      font-weight: 700;
+      border-top: 2px solid #cbd5e1;
+    }
+    .serv-resumen-table tfoot td {
+      padding: 12px 18px;
+      font-size: 0.95rem;
+      color: #0f172a;
+    }
+
+    /* Badges de Estado Item */
+    .badge-item-status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .badge-item-verde { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .badge-item-rojo { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .badge-item-azul { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+
+    /* Badges de Estado Servicio */
+    .badge-serv-status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .badge-serv-verde { background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .badge-serv-amarillo { background-color: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .badge-serv-naranja { background-color: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+    .badge-serv-rojo { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .badge-serv-morado { background-color: #faf5ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+    .badge-serv-gris { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+    /* Botón de Descarga individual en tabla */
+    .btn-table-download {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #0284c7;
+      background-color: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .btn-table-download:hover {
+      background-color: #0284c7;
+      color: white;
+      border-color: #0284c7;
+      box-shadow: 0 2px 5px rgba(2, 132, 199, 0.25);
+    }
+
+    @media (max-width: 1100px) {
+      .filters-7 {
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+    }
+    @media (max-width: 768px) {
+      .filters-7 {
+        grid-template-columns: 1fr !important;
+      }
+    }
   </style>
 </head>
 
@@ -146,7 +258,13 @@ th {
       <div class="title" style="display: flex; align-items: center; gap: 15px;">CUMPLIMIENTO <span style="background: linear-gradient(135deg, #f97316, #ea580c); color: white; font-size: 0.8rem; font-weight: 700; padding: 4px 12px; border-radius: 8px; box-shadow: 0 4px 6px rgba(234, 88, 12, 0.4); text-transform: none; letter-spacing: normal;">Este reporte se actualiza los días Martes 13:00 hs.</span></div>
       <div class="subtitle">Análisis de Servicios y Subcontratos de Obra</div>
     </div>
-    <div class="topbar-right">
+    <div class="topbar-right" style="display: flex; gap: 0.5rem; align-items: stretch;">
+      <button class="btn-refresh-top" onclick="window.forceRefreshData()" title="Actualizar datos">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
       <div class="update-box">
         <div class="update-label">Última actualización</div>
         <div id="lastUpdate" class="update-date">24/09/2026</div>
@@ -177,72 +295,44 @@ th {
   <main class="container">
     <section class="panel">
       <div class="panel-title">FILTROS DE SERVICIOS</div>
-<div class="panel-body filters-7"> 
-    <div class="filter"><label>CLIENTE</label><select id="clienteSelect" multiple class="multi-select"></select></div>
-    
-    <div class="filter"><label>CENTRO</label><select id="centroSelect" multiple class="multi-select"></select></div>
-    
-    <div class="filter"><label>PERÍODO</label><select id="clasif2Select" multiple class="multi-select"></select></div>
-    
-    <div class="filter"><label>ESTADO</label><select id="gcocSelect" multiple class="multi-select"></select></div>  
-    
-    <div class="filter"><label>G. COMPRA</label><select id="grupoCompraSelect" multiple class="multi-select"></select></div> 
-    
-    <div class="filter"><label>ESTADO ITEM</label><select id="estadoItemSelect" multiple class="multi-select"></select></div>
-    
-    <div class="filter-kpi">
-        <label>TOTAL</label>
-        <div class="kpi-mini-box">
+      <div class="panel-body filters-7"> 
+        <div class="filter"><label>CLIENTE</label><select id="clienteSelect" multiple class="multi-select"></select></div>
+        <div class="filter"><label>CENTRO</label><select id="centroSelect" multiple class="multi-select"></select></div>
+        <div class="filter"><label>PERÍODO</label><select id="clasif2Select" multiple class="multi-select"></select></div>
+        <div class="filter"><label>ESTADO</label><select id="gcocSelect" multiple class="multi-select"></select></div>  
+        <div class="filter"><label>G. COMPRA</label><select id="grupoCompraSelect" multiple class="multi-select"></select></div> 
+        <div class="filter"><label>ESTADO ITEM</label><select id="estadoItemSelect" multiple class="multi-select"></select></div>
+        <div class="filter-kpi">
+          <label>TOTAL</label>
+          <div class="kpi-mini-box">
             <span id="kpiTotal" class="kpi-mini-value">0</span>
             <span class="kpi-mini-label">Servicios</span>
-        </div>
-        <button id="btnDownloadSelection" class="btn-small">⬇ Descargar</button>
-    </div>
-</div>
+          </div>
+          <button id="btnDownloadSelection" class="btn-small">⬇ Descargar</button>
         </div>
       </div>
     </section>
 
     <section class="panel">
-      <div class="panel-title">ANÁLISIS GESTIÓN SERVICIOS</div>
-      <div class="top-scroll-wrapper" id="top-scroll"><div class="fake-content" id="fake-content"></div></div>
-      <div class="master-wrapper" id="bottom-scroll">
-        <table id="tablaServicios">
+      <div class="panel-title">RESUMEN DE PEDIDOS POR ESTADO</div>
+      <div class="panel-body" style="padding: 20px; overflow-x: auto;">
+        <table id="serv_tablaResumen" class="serv-resumen-table">
           <thead>
             <tr>
-              <th>NRO. VA01/VA21</th>
-              <th>CODIGO ITEM</th>
-              <th>DESCRIPCIÓN ITEM</th>
-              <th>SOLICITADO</th>
-              <th>RECEPCIONADO</th>
-              <th>PENDIENTE DE ADJUDICAR</th>
-              <th>PENDIENTE DE RECEPCIONAR</th>
-              <th>ESTADO ITEM</th>
-              <th>F.ENTREGA ESPERADA</th>
-              <th>NRO. RECEPCION</th>
-              <th>FECHA RECEPCION</th>
-              <th>NRO. OC</th>
-              <th>GRUPO DE COMPRA</th>
-              <th>Estado Servicio</th>
-              <th>Período de certificación</th>
+              <th class="sortable" data-sort="estadoItem" title="Ordenar por Estado Item">ESTADO ITEM <span id="serv_sort_estadoItem">↕</span></th>
+              <th class="sortable" data-sort="estadoServicio" title="Ordenar por Estado Servicio">ESTADO SERVICIO <span id="serv_sort_estadoServicio">↕</span></th>
+              <th class="sortable" data-sort="count" title="Ordenar por Cantidad" style="text-align: right;">CANTIDAD DE PEDIDOS <span id="serv_sort_count">▼</span></th>
+              <th style="text-align: center; width: 130px;">ACCIONES</th>
             </tr>
           </thead>
-          <tbody id="tablaBody"></tbody>
+          <tbody id="serv_resumenBody"></tbody>
         </table>
       </div>
     </section>
-<section class="panel">
-    <div class="panel-title">GRÁFICO RESUMEN</div>
-    <div class="panel-body" style="display: flex; justify-content: center; align-items: center; padding: 20px;">
-        <div style="width: 100%; max-width: 700px;"> 
-            <canvas id="chartEstados"></canvas>
-        </div>
-    </div>
-</section>
   </main>
 
-  <script src="js/help.js?v=20260924_141733"></script>
-  <script src="js/servicios.js?v=20260924_141733"></script>
+  <script src="js/help.js?v=20260924_143500"></script>
+  <script src="js/servicios.js?v=20260924_143500"></script>
 </body>
 </html>
 

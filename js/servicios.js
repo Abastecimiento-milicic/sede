@@ -2,31 +2,52 @@
   const csvUrl = "./data/REPORTE CUMPLIMIENTO SS Y SUB - SEDE.csv";
   const DELIM = ";";
 
-  const CLIENT_COL_NAME = "CLIENTE";
-  const CENTRO_COL_NAME = "CENTRO";
-  const PERIODO_COL_NAME = "Período de certificación";
-  const ESTADO_COL_NAME = "Estado Servicio";
-  const ESTADO_CERT_COL = "Estado Certificación";
-  const G_COMPRA_COL_NAME = "Grupo de Compra Definitivo";
-  const ESTADO_ITEM_COL = "ESTADO ITEM";
+  let CLIENT_COL_NAME = "CLIENTE";
+  let CENTRO_COL_NAME = "CENTRO";
+  let PERIODO_COL_NAME = "Período de certificación";
+  let ESTADO_COL_NAME = "Estado Servicio";
+  let G_COMPRA_COL_NAME = "Grupo de Compra Definitivo";
+  let ESTADO_ITEM_COL = "ESTADO ITEM";
 
   let data = [];
   let headers = [];
+  let currentSort = { col: 'count', dir: 'desc' };
 
   const clean = (v) => (v ?? "").toString().trim();
+
   function getEl(id) {
       if (!id) return null;
-      return document.getElementById(id) || document.getElementById(id.replace(/^serv_/, ""));
+      return document.getElementById(id) || 
+             document.getElementById("serv_" + id) || 
+             document.getElementById(id.replace(/^serv_/, ""));
   }
-  function setText(id, txt) { const el = getEl(id); if (el) el.textContent = txt ?? ""; }
-  function fmtInt(n) { return Number(n || 0).toLocaleString("es-AR"); }
+
+  function setText(id, txt) { 
+      const el = getEl(id); 
+      if (el) el.textContent = txt ?? ""; 
+  }
+
+  function fmtInt(n) { 
+      return Number(n || 0).toLocaleString("es-AR"); 
+  }
+
+  function safeFileName(str) {
+      return (str || "").toString().replace(/[^\w\-]+/g, "_").replace(/^_+|_+$/g, "") || "Item";
+  }
 
   async function fetchWithCache(url) {
-      // url ya viene con el buster desde la llamada original en servicios.js
-      return await window.fetchWithCache(url);
+      if (typeof window.fetchWithCache === "function") {
+          return await window.fetchWithCache(url);
+      }
+      const resp = await fetch(url);
+      return await resp.text();
   }
 
   function parseCSV(text) {
+      if (typeof Papa !== 'undefined') {
+          const result = Papa.parse(text, { delimiter: DELIM, skipEmptyLines: true });
+          return result.data;
+      }
       const rows = [];
       let row = [];
       let cur = "";
@@ -42,45 +63,161 @@
       return rows;
   }
 
-  function syncScrolls() {
-      const top = getEl('serv_top-scroll');
-      const bottom = getEl('serv_bottom-scroll');
-      const fake = getEl('serv_fake-content');
-      const table = getEl('serv_tablaServicios');
-      if (top && bottom && fake && table) {
-          fake.style.width = table.offsetWidth + 'px';
-          top.onscroll = () => { bottom.scrollLeft = top.scrollLeft; };
-          bottom.onscroll = () => { top.scrollLeft = bottom.scrollLeft; };
-      }
-  }
-
   function getSelValues(id) {
       const sel = getEl(id);
       if (!sel) return [];
       return [...sel.selectedOptions].map(o => o.value).filter(v => v !== "__ALL__");
   }
 
-  function downloadCSV(rows) {
-      if (!rows.length) return alert("No hay datos seleccionados para descargar.");
-      
-      const data = [headers];
+  function downloadExcel(rows, filename = "Seleccion_Servicios.xlsx") {
+      if (!rows || !rows.length) {
+          alert("No hay datos seleccionados para descargar.");
+          return;
+      }
+      if (typeof XLSX === "undefined") {
+          alert("La librería de Excel (XLSX) no está cargada.");
+          return;
+      }
+      const exportData = [headers];
       rows.forEach(r => {
-          data.push(headers.map(h => r[h]));
+          exportData.push(headers.map(h => r[h] ?? ""));
       });
-      
-      const ws = XLSX.utils.aoa_to_sheet(data);
+      const ws = XLSX.utils.aoa_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Servicios");
-      XLSX.writeFile(wb, "Seleccion_Servicios.xlsx");
+      XLSX.writeFile(wb, filename);
+  }
+
+  function getItemBadgeClass(estadoItem) {
+      const val = clean(estadoItem).toUpperCase();
+      const rojos = ["ADJUDICADO", "ADJUDICADO PARCIAL", "RESPONDIDO", "INCOMPLETO", "SIN TRATAMIENTO"];
+      const verdes = ["CUMPLIDO", "ALMACENADO", "CONSUMIDO", "CONSUMIDO PARCIAL", "RECEPCIONADO", "RECEPCIONADO PARCIAL"];
+      if (verdes.some(v => val === v || val.startsWith(v))) return "badge-item-verde";
+      if (rojos.some(r => val === r || val.startsWith(r))) return "badge-item-rojo";
+      return "badge-item-azul";
+  }
+
+  function getServicioBadgeClass(estadoServicio) {
+      const val = clean(estadoServicio);
+      if (val === "En curso") return "badge-serv-verde";
+      if (val.startsWith("En curso - Total recepcionado")) return "badge-serv-naranja";
+      if (val.startsWith("En curso - Pr") || val.includes("ximo a vencer")) return "badge-serv-amarillo";
+      if (val.includes("Vencido")) return "badge-serv-rojo";
+      if (val.includes("Pedido de Info")) return "badge-serv-morado";
+      return "badge-serv-gris";
+  }
+
+  function renderResumenTable(filtered) {
+      const resumenTbody = getEl("serv_resumenBody") || getEl("resumenBody");
+      if (!resumenTbody) return;
+      resumenTbody.innerHTML = "";
+
+      if (!filtered || filtered.length === 0) {
+          resumenTbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 25px; font-style: italic;">No hay pedidos para los filtros seleccionados</td></tr>`;
+          return;
+      }
+
+      // Agrupar por ESTADO ITEM y Estado Servicio guardando las filas asociadas
+      const summaryMap = new Map();
+      filtered.forEach(r => {
+          const estadoItem = clean(r[ESTADO_ITEM_COL]) || "(Sin Estado Item)";
+          const estadoServicio = clean(r[ESTADO_COL_NAME]) || "(Sin Estado Servicio)";
+          const key = `${estadoItem}___${estadoServicio}`;
+
+          if (!summaryMap.has(key)) {
+              summaryMap.set(key, { estadoItem, estadoServicio, count: 0, rows: [] });
+          }
+          const grp = summaryMap.get(key);
+          grp.count += 1;
+          grp.rows.push(r);
+      });
+
+      const summaryList = Array.from(summaryMap.values());
+
+      // Ordenamiento dinámico
+      summaryList.sort((a, b) => {
+          let res = 0;
+          if (currentSort.col === 'count') {
+              res = a.count - b.count;
+              if (res === 0) res = a.estadoItem.localeCompare(b.estadoItem);
+          } else if (currentSort.col === 'estadoItem') {
+              res = a.estadoItem.localeCompare(b.estadoItem);
+              if (res === 0) res = b.count - a.count;
+          } else if (currentSort.col === 'estadoServicio') {
+              res = a.estadoServicio.localeCompare(b.estadoServicio);
+              if (res === 0) res = b.count - a.count;
+          }
+          return currentSort.dir === 'desc' ? -res : res;
+      });
+
+      // Actualizar íconos indicadores de orden en encabezados
+      ['estadoItem', 'estadoServicio', 'count'].forEach(col => {
+          const icon = getEl(`serv_sort_${col}`) || getEl(`sort_${col}`);
+          if (icon) {
+              if (currentSort.col === col) {
+                  icon.textContent = currentSort.dir === 'asc' ? '▲' : '▼';
+                  icon.style.color = '#2563eb';
+              } else {
+                  icon.textContent = '↕';
+                  icon.style.color = '#94a3b8';
+              }
+          }
+      });
+
+      // Renderizar filas de la tabla con botón de descarga individual
+      summaryList.forEach((item, index) => {
+          const tr = document.createElement("tr");
+          const itemBadge = getItemBadgeClass(item.estadoItem);
+          const servBadge = getServicioBadgeClass(item.estadoServicio);
+
+          tr.innerHTML = `
+              <td><span class="badge-item-status ${itemBadge}">${item.estadoItem}</span></td>
+              <td><span class="badge-serv-status ${servBadge}">${item.estadoServicio}</span></td>
+              <td style="text-align: right;"><span style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">${fmtInt(item.count)}</span></td>
+              <td style="text-align: center;">
+                  <button class="btn-table-download" data-idx="${index}" title="Descargar ${item.count} items en Excel">⬇ Descargar</button>
+              </td>
+          `;
+          resumenTbody.appendChild(tr);
+      });
+
+      // Listener para cada botón de descarga por fila
+      resumenTbody.querySelectorAll(".btn-table-download").forEach(btn => {
+          btn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              const idx = parseInt(btn.getAttribute("data-idx"), 10);
+              const targetItem = summaryList[idx];
+              if (targetItem && targetItem.rows && targetItem.rows.length) {
+                  const fname = `Servicios_${safeFileName(targetItem.estadoItem)}_${safeFileName(targetItem.estadoServicio)}.xlsx`;
+                  downloadExcel(targetItem.rows, fname);
+              }
+          });
+      });
+  }
+
+  function setupSortListeners() {
+      document.querySelectorAll('.serv-resumen-table th.sortable, th.sortable').forEach(th => {
+          th.addEventListener('click', () => {
+              const col = th.getAttribute('data-sort');
+              if (!col) return;
+              if (currentSort.col === col) {
+                  currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+              } else {
+                  currentSort.col = col;
+                  currentSort.dir = col === 'count' ? 'desc' : 'asc';
+              }
+              applyAll();
+          });
+      });
   }
 
   function applyAll() {
-      const selClientes = getSelValues("serv_clienteSelect");
-      const selCentros = getSelValues("serv_centroSelect");
-      const selPeriodos = getSelValues("serv_clasif2Select");
-      const selEstados = getSelValues("serv_gcocSelect");
-      const selGrupos = getSelValues("serv_grupoCompraSelect");
-      const selItemEst = getSelValues("serv_estadoItemSelect"); 
+      const selClientes = getSelValues("clienteSelect");
+      const selCentros = getSelValues("centroSelect");
+      const selPeriodos = getSelValues("clasif2Select");
+      const selEstados = getSelValues("gcocSelect");
+      const selGrupos = getSelValues("grupoCompraSelect");
+      const selItemEst = getSelValues("estadoItemSelect"); 
       
       const filtered = data.filter(r => {
           const matchClie = !selClientes.length || selClientes.includes(r[CLIENT_COL_NAME]);
@@ -92,47 +229,8 @@
           return matchClie && matchCent && matchPeri && matchEsta && matchGrup && matchItem;
       });
 
-      setText("serv_kpiTotal", fmtInt(filtered.length));
-
-      const tbody = getEl("serv_tablaBody");
-      if (tbody) {
-          tbody.innerHTML = "";
-
-          filtered.forEach(r => {
-              const tr = document.createElement("tr");
-              const estCert = clean(r[ESTADO_CERT_COL]).toLowerCase();
-              if (estCert === "verde") tr.classList.add("row-verde");
-              else if (estCert === "rojo") tr.classList.add("row-rojo");
-
-              const valorItem = clean(r[ESTADO_ITEM_COL]).toUpperCase();
-              let claseCelda = "";
-              const rojos = ["ADJUDICADO", "ADJUDICADO PARCIAL", "RESPONDIDO", "INCOMPLETO","SIN TRATAMIENTO"];
-              const verdes = ["CUMPLIDO", "ALMACENADO", "CONSUMIDO PARCIAL"];
-
-              if (rojos.includes(valorItem)) claseCelda = "cell-rojo";
-              else if (verdes.includes(valorItem)) claseCelda = "cell-verde";
-
-              tr.innerHTML = `
-                  <td>${r["NRO. VA01/VA21"] || ""}</td>
-                  <td>${r["CODIGO ITEM"] || ""}</td>
-                  <td>${r["DESCRIPCION ITEM"] || ""}</td>
-                  <td>${r["CANTIDAD SOLICITADA"] || ""}</td>
-                  <td>${r["CANTIDAD TOTAL RECEPCIONADA"] || ""}</td>
-                  <td>${r["CANTIDAD PENDIENTE DE ADJUDICAR"] || ""}</td>
-                  <td>${r["CANTIDAD TOTAL PENDIENTE RECEP."] || ""}</td>
-                  <td class="${claseCelda}">${r["ESTADO ITEM"] || ""}</td>
-                  <td>${r["FECHA ENTREGA ESPERADA"] || ""}</td>
-                  <td>${r["NRO. RECEPCION"] || ""}</td>
-                  <td>${r["FECHA RECEPCION"] || ""}</td>
-                  <td>${r["NRO. OC"] || ""}</td>
-                  <td>${r["Grupo de Compra Definitivo"] || ""}</td>
-                  <td>${r["Estado Servicio"] || ""}</td>
-                  <td>${r["Período de certificación"] || ""}</td>
-              `;
-              tbody.appendChild(tr);
-          });
-      }
-      setTimeout(syncScrolls, 150);
+      setText("kpiTotal", fmtInt(filtered.length));
+      renderResumenTable(filtered);
       return filtered;
   }
 
@@ -148,50 +246,12 @@
       });
   }
 
-  function actualizarGraficoConDatos() {
-      if (!window.miGrafico) return;
-
-      const actuales = applyAll(); 
-      const conteo = {};
-      actuales.forEach(r => {
-          const estado = r[ESTADO_COL_NAME] || "Sin Estado";
-          conteo[estado] = (conteo[estado] || 0) + 1;
-      });
-
-      const labels = Object.keys(conteo);
-      const valores = Object.values(conteo);
-
-      const mapaColores = {
-          'En curso - Próximo a vencer': '#fbbf24', 
-          'En curso': '#10b981',                  
-          'En curso - Total recepcionado': '#f97316', 
-          'Pedido de Info': '#a855f7',            
-          'Vencido con cant pendiente a recep': '#ef4444' 
-      };
-
-      const coloresAsignados = labels.map(label => {
-          return mapaColores[label] || '#64748b'; 
-      });
-      
-      window.miGrafico.data.labels = labels;
-      window.miGrafico.data.datasets[0].data = valores;
-      window.miGrafico.data.datasets[0].backgroundColor = coloresAsignados;
-
-      window.miGrafico.options.plugins.legend = {
-          display: true,
-          position: 'right',
-          align: 'center',
-          labels: {
-              boxWidth: 15,
-              padding: 20,
-              font: {
-                  size: 12
-              }
-          }
-      };
-
-      window.miGrafico.options.maintainAspectRatio = false;
-      window.miGrafico.update();
+  function resolveHeader(candidates, availableHeaders) {
+      for (const cand of candidates) {
+          const found = availableHeaders.find(h => clean(h).toLowerCase() === clean(cand).toLowerCase());
+          if (found) return found;
+      }
+      return candidates[0];
   }
 
   /* ============================
@@ -201,74 +261,54 @@
       if (window.serviciosInitialized) return;
       window.serviciosInitialized = true;
 
-      // Register the plugin (restored from servicios.js)
-      Chart.register(ChartDataLabels);
-
-      // fetch with cache optimized
       const buster = window.CACHE_BUSTER || new Date().getTime();
       fetchWithCache(csvUrl + "?t=" + buster)
       .then(text => {
           const rows = parseCSV(text);
           if (rows.length < 2) return;
           headers = rows[0].map(clean);
+
+          CLIENT_COL_NAME = resolveHeader(["CLIENTE", "Cliente"], headers);
+          CENTRO_COL_NAME = resolveHeader(["CENTRO", "Centro"], headers);
+          PERIODO_COL_NAME = resolveHeader(["Período de certificación", "Periodo de certificación", "Período", "Periodo"], headers);
+          ESTADO_COL_NAME = resolveHeader(["Estado Servicio", "ESTADO SERVICIO", "Estado servicio"], headers);
+          G_COMPRA_COL_NAME = resolveHeader(["Grupo de Compra Definitivo", "GRUPO DE COMPRA", "Grupo de Compra"], headers);
+          ESTADO_ITEM_COL = resolveHeader(["ESTADO ITEM", "Estado Item", "Estado item"], headers);
+
           data = rows.slice(1).map(row => {
               let o = {};
               headers.forEach((h, i) => o[h] = clean(row[i]));
               return o;
-          }).filter(r => {
-              return !(r[ESTADO_COL_NAME] === "Vencido con cant pendiente a recep" && r[ESTADO_ITEM_COL] === "CUMPLIDO");
-          });
+          }).filter(r => Object.values(r).some(v => v !== ""));
 
-          fill("serv_clienteSelect", CLIENT_COL_NAME);
-          fill("serv_centroSelect", CENTRO_COL_NAME);
-          fill("serv_clasif2Select", PERIODO_COL_NAME);
-          fill("serv_gcocSelect", ESTADO_COL_NAME);
-          fill("serv_grupoCompraSelect", G_COMPRA_COL_NAME);
-          fill("serv_estadoItemSelect", ESTADO_ITEM_COL);
+          fill("clienteSelect", CLIENT_COL_NAME);
+          fill("centroSelect", CENTRO_COL_NAME);
+          fill("clasif2Select", PERIODO_COL_NAME);
+          fill("gcocSelect", ESTADO_COL_NAME);
+          fill("grupoCompraSelect", G_COMPRA_COL_NAME);
+          fill("estadoItemSelect", ESTADO_ITEM_COL);
 
-          ["serv_clienteSelect", "serv_centroSelect", "serv_clasif2Select", "serv_gcocSelect", "serv_grupoCompraSelect", "serv_estadoItemSelect"].forEach(id => {
+          ["clienteSelect", "centroSelect", "clasif2Select", "gcocSelect", "grupoCompraSelect", "estadoItemSelect"].forEach(id => {
               getEl(id)?.addEventListener("change", () => {
                   applyAll();
-                  actualizarGraficoConDatos();
               });
           });
 
-          getEl("serv_btnDownloadSelection")?.addEventListener("click", () => {
+          getEl("btnDownloadSelection")?.addEventListener("click", () => {
               const currentFiltered = applyAll();
-              downloadCSV(currentFiltered);
+              downloadExcel(currentFiltered, "Seleccion_Servicios.xlsx");
           });
 
+          setupSortListeners();
           applyAll();
-          
-          const canvas = getEl('serv_chartEstados');
-          if (canvas) {
-              const ctx = canvas.getContext('2d');
-              window.miGrafico = new Chart(ctx, {
-                  type: 'doughnut',
-                  data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 2 }] },
-                  options: {
-                      responsive: true,
-                      plugins: { 
-                          legend: { position: 'bottom' },
-                          datalabels: {
-                              color: '#fff',
-                              font: { weight: 'bold', size: 12 },
-                              formatter: (value, ctx) => {
-                                  let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                  let percentage = (value * 100 / sum).toFixed(1) + "%";
-                                  return value + "\n(" + percentage + ")";
-                              }
-                          }
-                      },
-                      cutout: '65%'
-                  }
-              });
-              actualizarGraficoConDatos();
-          }
 
-          const loader = getEl("serv_loader");
+          const loader = getEl("loader");
           if (loader) loader.style.display = "none";
-          window.addEventListener('resize', syncScrolls);
+      })
+      .catch(err => {
+          console.error("Error al cargar servicios:", err);
+          const loader = getEl("loader");
+          if (loader) loader.style.display = "none";
       });
   };
 
